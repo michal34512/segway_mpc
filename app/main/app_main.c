@@ -20,6 +20,7 @@ void app_main(void *argument) {
     queue_manager_init();
     cli_task_init();
     imu_manager_init();
+    step_manager_init();
     mpc_task_init();
 
     SYSVIEW_START();

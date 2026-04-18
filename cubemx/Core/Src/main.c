@@ -21,11 +21,13 @@
 #include "cmsis_os.h"
 #include "i2c.h"
 #include "memorymap.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "logger/logger.h"
+#include "step_motor/step_manager.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,6 +93,8 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C3_Init();
+  MX_TIM2_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
     // HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
     // HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);

@@ -7,7 +7,7 @@
 #include "logger/logger.h"
 #include "mpc_task/mpc_task.h"
 #include "queue_manager/queue_manager.h"
-
+#include "step_motor/step_manager.h"
 
 #define SENSORS_TASK_STACK_SIZE (512 * 4)
 #if SENSORS_TASK_STACK_SIZE % 4 != 0
@@ -33,6 +33,8 @@ static void mpc_task(void *argument) {
         float pitch = 0;
         PITCH_QUEUE_PEEK(&pitch);
         LOG_INFO("Pitch: %5.2f\n\r", pitch);
+        step_manager_set_speed(STEP_MOTOR_1, pitch * 10);
+        step_manager_set_speed(STEP_MOTOR_2, pitch * 10);
         vTaskDelay(10);
     }
 }

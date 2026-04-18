@@ -79,6 +79,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 	# Drivers
     ${APP_PATH}/drivers/sysview/sysview_macros.c
     ${APP_PATH}/drivers/i2c_manager/i2c_manager.c
+    ${APP_PATH}/drivers/step_motor/step_manager.c
     # ${APP_PATH}/drivers/spi_manager/spi_manager.c
     ${APP_PATH}/drivers/queue_manager/queue_manager.c
     ${APP_PATH}/drivers/cli/cli_rtt.c

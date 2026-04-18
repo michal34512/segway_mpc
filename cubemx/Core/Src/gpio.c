@@ -49,13 +49,13 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, MOT1_DIR_Pin|MOT2_MS1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, MOT1_STEP_Pin|MOT1_MS3_Pin|MOT1_MS2_Pin|MOT1_MS1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, MOT1_MS3_Pin|MOT1_MS2_Pin|MOT1_MS1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(MOT2_MS2_GPIO_Port, MOT2_MS2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MOT2_MS3_Pin|MOT2_STEP_Pin|MOT2_DIR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, MOT2_MS3_Pin|MOT2_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : MOT1_DIR_Pin MOT2_MS1_Pin */
   GPIO_InitStruct.Pin = MOT1_DIR_Pin|MOT2_MS1_Pin;
@@ -64,8 +64,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MOT1_STEP_Pin MOT1_MS3_Pin MOT1_MS2_Pin MOT1_MS1_Pin */
-  GPIO_InitStruct.Pin = MOT1_STEP_Pin|MOT1_MS3_Pin|MOT1_MS2_Pin|MOT1_MS1_Pin;
+  /*Configure GPIO pins : MOT1_MS3_Pin MOT1_MS2_Pin MOT1_MS1_Pin */
+  GPIO_InitStruct.Pin = MOT1_MS3_Pin|MOT1_MS2_Pin|MOT1_MS1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -84,8 +84,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(MOT2_MS2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MOT2_MS3_Pin MOT2_STEP_Pin MOT2_DIR_Pin */
-  GPIO_InitStruct.Pin = MOT2_MS3_Pin|MOT2_STEP_Pin|MOT2_DIR_Pin;
+  /*Configure GPIO pins : MOT2_MS3_Pin MOT2_DIR_Pin */
+  GPIO_InitStruct.Pin = MOT2_MS3_Pin|MOT2_DIR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
