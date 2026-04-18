@@ -33,9 +33,6 @@
 /* USER CODE END 1 */
 
 /** Configure pins
-     PB12   ------> UART5_RX
-     PB15   ------> SPI2_MOSI
-     PA11   ------> UART4_RX
 */
 void MX_GPIO_Init(void)
 {
@@ -43,32 +40,50 @@ void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin : PB12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_12;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, MOT1_DIR_Pin|MOT2_MS1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, MOT1_STEP_Pin|MOT1_MS3_Pin|MOT1_MS2_Pin|MOT1_MS1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(MOT2_MS2_GPIO_Port, MOT2_MS2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, MOT2_MS3_Pin|MOT2_STEP_Pin|MOT2_DIR_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : MOT1_DIR_Pin MOT2_MS1_Pin */
+  GPIO_InitStruct.Pin = MOT1_DIR_Pin|MOT2_MS1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF14_UART5;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  /*Configure GPIO pins : MOT1_STEP_Pin MOT1_MS3_Pin MOT1_MS2_Pin MOT1_MS1_Pin */
+  GPIO_InitStruct.Pin = MOT1_STEP_Pin|MOT1_MS3_Pin|MOT1_MS2_Pin|MOT1_MS1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PA11 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF6_UART4;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : MOT2_MS2_Pin */
+  GPIO_InitStruct.Pin = MOT2_MS2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(MOT2_MS2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : MOT2_MS3_Pin MOT2_STEP_Pin MOT2_DIR_Pin */
+  GPIO_InitStruct.Pin = MOT2_MS3_Pin|MOT2_STEP_Pin|MOT2_DIR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

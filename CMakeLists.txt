@@ -77,10 +77,16 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 
 	# Drivers
     ${APP_PATH}/drivers/sysview/sysview_macros.c
-    # ${APP_PATH}/drivers/i2c_manager/i2c_manager.c
+    ${APP_PATH}/drivers/i2c_manager/i2c_manager.c
     # ${APP_PATH}/drivers/spi_manager/spi_manager.c
     ${APP_PATH}/drivers/queue_manager/queue_manager.c
     ${APP_PATH}/drivers/cli/cli_rtt.c
+    
+    # MPU6050
+    ${APP_PATH}/drivers/mpu6050/I2C.c
+    ${APP_PATH}/drivers/mpu6050/mpu6050.c
+    ${APP_PATH}/drivers/mpu6050/inv_mpu_dmp_motion_driver.c
+    ${APP_PATH}/drivers/mpu6050/inv_mpu.c
 
 	# SEGGER
     ${PROJ_PATH}/3rdParty/Segger/RTT/SEGGER_RTT.c

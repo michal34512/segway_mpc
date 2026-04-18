@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "i2c.h"
 #include "memorymap.h"
 #include "gpio.h"
 
@@ -89,6 +90,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
     // HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
     // HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
