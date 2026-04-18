@@ -4,7 +4,7 @@
 #include <math.h>
 
 #define STEP_PULSE_WIDTH_US 10
-#define TIMER_CLOCK_FREQ    64000000
+#define TIMER_CLOCK_FREQ    550000000
 #define TIMER_PRESCALER     ((TIMER_CLOCK_FREQ / 1000000) - 1)
 
 typedef struct {
