@@ -1,0 +1,29 @@
+# JLink
+**JLinkRTTViewerSettings**
+
+# build
+3rdParty/CubeMx/build
+build/
+build_artifacts/
+build_tests/
+**/CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# STM32CubeProgrammer
+3rdParty/stm32cubeprg
+
+# proto files
+3rdParty/proto
+
+# token
+gitlab-token.txt
+3rdParty/CubeMx/CM4/Debug/*
+.settings/com.st.stm32cube.ide.mcu.sfrview.prefs
+
+# ignore
+3rdParty/CubeMx/.mxproject
+3rdParty/CubeMx/.project
+3rdParty/CubeMx/.settings
+3rdParty/CubeMx/CM4/.settings
+3rdParty/CubeMx/CM7/.settings

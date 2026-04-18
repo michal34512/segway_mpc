@@ -1,0 +1,6 @@
+#ifndef APP_TASKS_SENSORS_TASK_SENSORS_TASK_H_
+#define APP_TASKS_SENSORS_TASK_SENSORS_TASK_H_
+
+void sensors_task_init();
+
+#endif  // APP_TASKS_SENSORS_TASK_SENSORS_TASK_H_

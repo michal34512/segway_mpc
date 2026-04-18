@@ -1,0 +1,33 @@
+{
+    "files.associations": {
+        "cmsis_os2.h": "c",
+        "stm32f4xx_hal.h": "c",
+        "i2c.h": "c",
+        "main.h": "c",
+        "ssd1306_hal.h": "c",
+        "ssd1306_config.h": "c",
+        "ssd1306.h": "c",
+        "string.h": "c",
+        "queue_manager.h": "c",
+        "ui_manager_defs.h": "c",
+        "sysview_macros.h": "c",
+        "stdint.h": "c",
+        "ui_manager.h": "c",
+        "global_timer.h": "c",
+        "stdbool.h": "c",
+        "screen_manager.h": "c",
+        "icon_logo.h": "c"
+    },
+    "stm32.projectName": "segway_mpc",
+    "stm32.device": "STM32H725RG",
+    "stm32.cmake": "C:/ST/STM32CubeCLT_1.19.0/CMake/bin/cmake.EXE",
+    "stm32.svdPath": "C:/ST/STM32CubeCLT_1.19.0/STMicroelectronics_CMSIS_SVD/STM32H725.svd",
+    "stm32.gdbPath": "C:/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+    "stm32.armToolchainPath": "C:/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin",
+    "stm32.jlinkPath": "C:/Program Files/SEGGER/JLink_V860/JLinkGDBServerCL.exe",
+    "stm32.buildFolder": "${workspaceFolder}/build",
+    "cmake.configureSettings": {
+        "STM_PROJECT_NAME": "${command:stm32.getProjectName}" 
+    },
+    "C_Cpp.default.compilerPath": "arm-none-eabi-gcc",
+}

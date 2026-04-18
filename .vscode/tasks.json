@@ -1,0 +1,47 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: Configure Debug",
+            "type": "shell",
+            "command": "${config:stm32.cmake} --preset Debug -DSTM_PROJECT_NAME=${config:stm32.projectName}",
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Configure the project using CMake"
+        },
+        {
+            "label": "CMake: Configure Release",
+            "type": "shell",
+            "command": "${config:stm32.cmake} --preset Release -DSTM_PROJECT_NAME=${config:stm32.projectName}",
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Configure the project using CMake"
+        },
+        {
+            "label": "CMake: Build Debug",
+            "type": "shell",
+            "command": "${config:stm32.cmake} --build ${config:stm32.buildFolder}/Debug --target all",
+            "group": "build",
+            "dependsOn": "CMake: Configure Debug",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Builds the project using CMake"
+        },
+        {
+            "label": "CMake: Build Release",
+            "type": "shell",
+            "command": "${config:stm32.cmake} --build ${config:stm32.buildFolder}/Release --target all",
+            "group": "build",
+            "dependsOn": "CMake: Configure Release",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Builds the project using CMake"
+        },
+    ]
+}
