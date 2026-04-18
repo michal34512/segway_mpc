@@ -71,6 +71,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${APP_PATH}/main/app_main.c
     ${APP_PATH}/tasks/cli_task/cli_task.c
     ${APP_PATH}/tasks/cli_task/cli_commands.c
+    ${APP_PATH}/tasks/mpc_task/mpc_task.c
 
 	# Components
     ${APP_PATH}/logger/logger.c
@@ -81,6 +82,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # ${APP_PATH}/drivers/spi_manager/spi_manager.c
     ${APP_PATH}/drivers/queue_manager/queue_manager.c
     ${APP_PATH}/drivers/cli/cli_rtt.c
+    ${APP_PATH}/drivers/imu_manager/imu_manager.c
     
     # MPU6050
     ${APP_PATH}/drivers/mpu6050/I2C.c

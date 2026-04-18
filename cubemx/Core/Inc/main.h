@@ -67,6 +67,9 @@ void Error_Handler(void);
 #define MOT1_MS2_GPIO_Port GPIOA
 #define MOT1_MS1_Pin GPIO_PIN_7
 #define MOT1_MS1_GPIO_Port GPIOA
+#define INT_Pin GPIO_PIN_12
+#define INT_GPIO_Port GPIOB
+#define INT_EXTI_IRQn EXTI15_10_IRQn
 #define MOT2_MS1_Pin GPIO_PIN_12
 #define MOT2_MS1_GPIO_Port GPIOC
 #define MOT2_MS2_Pin GPIO_PIN_2

@@ -5,19 +5,19 @@
 
 #include "queue_manager/queue_manager.h"
 
-#define EXAMPLE_QUEUE_ITEM_SIZE (sizeof(int))
-#define EXAMPLE_QUEUE_LEN       (10)
+#define PITCH_QUEUE_ITEM_SIZE (sizeof(float))
+#define PITCH_QUEUE_LEN       (1)
 
-static StaticQueue_t exampleQueueBuffer;
-static uint8_t exampleQueueStorageBuffer[EXAMPLE_QUEUE_ITEM_SIZE * EXAMPLE_QUEUE_LEN];
+static StaticQueue_t pitchQueueBuffer;
+static uint8_t pitchQueueStorageBuffer[PITCH_QUEUE_ITEM_SIZE * PITCH_QUEUE_LEN];
 
 static QueueHandle_t queues[QUEUE_TYPE_SENTINEL];
 
 void queue_manager_init() {
-    queues[QUEUE_TYPE_EXAMPLE]
-      = xQueueCreateStatic(EXAMPLE_QUEUE_LEN, EXAMPLE_QUEUE_ITEM_SIZE, exampleQueueStorageBuffer, &exampleQueueBuffer);
+    queues[QUEUE_TYPE_PITCH]
+      = xQueueCreateStatic(PITCH_QUEUE_LEN, PITCH_QUEUE_ITEM_SIZE, pitchQueueStorageBuffer, &pitchQueueBuffer);
 
-    assert(queues[QUEUE_TYPE_EXAMPLE] != NULL);
+    assert(queues[QUEUE_TYPE_PITCH] != NULL);
 }
 
 int32_t queue_manager_receive(const queue_type_t type, void *item, uint32_t timeout_ms) {
@@ -38,7 +38,7 @@ int32_t queue_manager_send_isr(const queue_type_t type, void *item) {
     assert(item != NULL);
     assert((uint8_t)type < QUEUE_TYPE_SENTINEL);
 
-    return (xQueueSendFromISR(queues[type], item, 0) == pdFALSE) ? -1 : 0;
+    return (xQueueSendFromISR(queues[type], item, NULL) == pdFALSE) ? -1 : 0;
 }
 
 int32_t queue_manager_has_items(const queue_type_t type) {
@@ -51,6 +51,13 @@ int32_t queue_manager_overwrite(const queue_type_t type, void *item) {
     assert((uint8_t)type < QUEUE_TYPE_SENTINEL);
 
     return (xQueueOverwrite(queues[type], item) == pdFALSE) ? -1 : 0;
+}
+
+int32_t queue_manager_overwrite_isr(const queue_type_t type, void *item, BaseType_t *const pxHigherPriorityTaskWoken) {
+    assert(item != NULL);
+    assert((uint8_t)type < QUEUE_TYPE_SENTINEL);
+
+    return (xQueueOverwriteFromISR(queues[type], item, pxHigherPriorityTaskWoken) == pdFALSE) ? -1 : 0;
 }
 
 int32_t queue_manager_peek(const queue_type_t type, void *item) {
