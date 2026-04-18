@@ -32,10 +32,10 @@ void app_main(void *argument) {
     DMP_Init();  // Uruchomienie driverów InvSense i załadowanie firmware DMP
 
     while (1) {
-        Read_DMP();  // Pobierz nowe dane z FIFO z DMP
+        float pitch = Read_DMP_pitch();  // Pobierz nowe dane z FIFO z DMP
 
         LOG_INFO("Pitch: %5.2f | A: X:%d Y:%d Z:%d | G: X:%d Y:%d Z:%d\n",
-                 (double)Pitch,
+                 pitch,
                  accel[0],
                  accel[1],
                  accel[2],

@@ -357,7 +357,6 @@
 extern short gyro[3], accel[3];
 extern int16_t Gx_offset, Gy_offset, Gz_offset;
 extern float Acc1G_Values;
-extern float Pitch;
 
 #ifdef __cplusplus
 extern "C" {
@@ -372,7 +371,7 @@ void MPU6050_getlastMotion6(int16_t *ax, int16_t *ay, int16_t *az, int16_t *gx, 
 uint8_t MPU6050_getDeviceID(void);   // 读取MPU6050的ID
 void MPU6050_InitGyro_Offset(void);  // 初始化陀螺仪偏置
 void DMP_Init(void);
-void Read_DMP(void);
+float Read_DMP_pitch(void);
 int Read_Temperature(void);
 
 #ifdef __cplusplus

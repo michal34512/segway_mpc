@@ -15,7 +15,6 @@
 #define q30            1073741824.0f
 
 short gyro[3], accel[3], sensors;
-float Pitch;
 float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
 static signed char gyro_orientation[9] = {-1, 0, 0, 0, -1, 0, 0, 0, 1};
 
@@ -271,19 +270,20 @@ void DMP_Init(void) {
  返回  值：无
  作    者：平衡小车之家
  **************************************************************************/
-void Read_DMP(void) {
+float Read_DMP_pitch(void) {
     unsigned long sensor_timestamp;
     unsigned char more;
     long quat[4];
 
     dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more);
     if (sensors & INV_WXYZ_QUAT) {
-        q0    = quat[0] / q30;
-        q1    = quat[1] / q30;
-        q2    = quat[2] / q30;
-        q3    = quat[3] / q30;
-        Pitch = sinf(-2 * q1 * q3 + 2 * q0 * q2) * 57.3;
+        q0 = quat[0] / q30;
+        q1 = quat[1] / q30;
+        q2 = quat[2] / q30;
+        q3 = quat[3] / q30;
+        return atan2f(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2)) * 57.2957795f;
     }
+    return 0.f;
 }
 /**************************************************************************
  函数功能：读取MPU6050内置温度传感器数据
