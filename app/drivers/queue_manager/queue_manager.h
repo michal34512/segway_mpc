@@ -5,6 +5,10 @@
 #include <FreeRTOS.h>
 #include <inttypes.h>
 
+typedef struct {
+    float pitch;
+    float pitch_dot;
+} imu_data_t;
 
 typedef enum queue_type_e {
     QUEUE_TYPE_PITCH = 0,

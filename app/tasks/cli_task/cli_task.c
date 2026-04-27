@@ -10,7 +10,7 @@
 #include "cli_task/cli_commands.h"
 #include "cli_task/cli_task.h"
 
-#define CLI_TASK_STACK_SIZE (512 * 4)
+#define CLI_TASK_STACK_SIZE (256 * 4)
 #if CLI_TASK_STACK_SIZE % 4 != 0
   #error "Task stack size must be divisible by 4!"
 #endif

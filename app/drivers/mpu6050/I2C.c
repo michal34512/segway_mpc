@@ -3,6 +3,7 @@
 #include <string.h>
 
 HAL_StatusTypeDef i2c_write(uint8_t slave_addr, uint8_t reg_addr, uint8_t length, uint8_t const *data) {
+    (void)slave_addr;
     if (length + 1 > 128)
         return HAL_ERROR;
     uint8_t buf[128];
@@ -14,6 +15,7 @@ HAL_StatusTypeDef i2c_write(uint8_t slave_addr, uint8_t reg_addr, uint8_t length
 }
 
 HAL_StatusTypeDef i2c_read(uint8_t slave_addr, uint8_t reg_addr, uint8_t length, uint8_t *data) {
+    (void)slave_addr;
     return I2C_READ_MPU6050(&reg_addr, 1, data, length);
 }
 
@@ -22,7 +24,7 @@ HAL_StatusTypeDef IICwriteBit(uint8_t slave_addr, uint8_t reg_addr, uint8_t bitN
     i2c_read(slave_addr, reg_addr, 1, &tmp);
     tmp = (data != 0) ? (tmp | (1 << bitNum)) : (tmp & ~(1 << bitNum));
     return i2c_write(slave_addr, reg_addr, 1, &tmp);
-};
+}
 
 HAL_StatusTypeDef IICwriteBits(uint8_t slave_addr, uint8_t reg_addr, uint8_t bitStart, uint8_t length, uint8_t data) {
     uint8_t tmp, dataShift;

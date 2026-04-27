@@ -5,7 +5,7 @@
 
 #include "queue_manager/queue_manager.h"
 
-#define PITCH_QUEUE_ITEM_SIZE (sizeof(float))
+#define PITCH_QUEUE_ITEM_SIZE (sizeof(imu_data_t))
 #define PITCH_QUEUE_LEN       (1)
 
 static StaticQueue_t pitchQueueBuffer;

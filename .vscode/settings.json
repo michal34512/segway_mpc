@@ -30,4 +30,5 @@
         "STM_PROJECT_NAME": "${command:stm32.getProjectName}" 
     },
     "C_Cpp.default.compilerPath": "arm-none-eabi-gcc",
+    "cortex-debug.variableUseNaturalFormat": false,
 }

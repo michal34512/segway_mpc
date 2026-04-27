@@ -57,7 +57,7 @@ static void run_self_test(void) {
          * to the DMP.
          */
         float sens;
-        unsigned short accel_sens;
+        // unsigned short accel_sens;
         mpu_get_gyro_sens(&sens);
         gyro[0] = (long)(gyro[0] * sens);
         gyro[1] = (long)(gyro[1] * sens);
