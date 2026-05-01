@@ -37,40 +37,40 @@
 #include "acados/utils/math.h"
 #include "acados_c/ocp_nlp_interface.h"
 #include "acados_c/external_function_interface.h"
-#include "acados_solver_segway_nonlinear_mpc.h"
+#include "acados_solver_segway_linear_mpc.h"
 
 // blasfeo
 #include "blasfeo_d_aux_ext_dep.h"
 
-#define NX     SEGWAY_NONLINEAR_MPC_NX
-#define NP     SEGWAY_NONLINEAR_MPC_NP
-#define NU     SEGWAY_NONLINEAR_MPC_NU
-#define NBX0   SEGWAY_NONLINEAR_MPC_NBX0
-#define NP_GLOBAL   SEGWAY_NONLINEAR_MPC_NP_GLOBAL
+#define NX     SEGWAY_LINEAR_MPC_NX
+#define NP     SEGWAY_LINEAR_MPC_NP
+#define NU     SEGWAY_LINEAR_MPC_NU
+#define NBX0   SEGWAY_LINEAR_MPC_NBX0
+#define NP_GLOBAL   SEGWAY_LINEAR_MPC_NP_GLOBAL
 
 
 int main()
 {
 
-    segway_nonlinear_mpc_solver_capsule *acados_ocp_capsule = segway_nonlinear_mpc_acados_create_capsule();
+    segway_linear_mpc_solver_capsule *acados_ocp_capsule = segway_linear_mpc_acados_create_capsule();
     // there is an opportunity to change the number of shooting intervals in C without new code generation
-    int N = SEGWAY_NONLINEAR_MPC_N;
+    int N = SEGWAY_LINEAR_MPC_N;
     // allocate the array and fill it accordingly
     double* new_time_steps = NULL;
-    int status = segway_nonlinear_mpc_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
+    int status = segway_linear_mpc_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
 
     if (status)
     {
-        printf("segway_nonlinear_mpc_acados_create() returned status %d. Exiting.\n", status);
+        printf("segway_linear_mpc_acados_create() returned status %d. Exiting.\n", status);
         exit(1);
     }
 
-    ocp_nlp_config *nlp_config = segway_nonlinear_mpc_acados_get_nlp_config(acados_ocp_capsule);
-    ocp_nlp_dims *nlp_dims = segway_nonlinear_mpc_acados_get_nlp_dims(acados_ocp_capsule);
-    ocp_nlp_in *nlp_in = segway_nonlinear_mpc_acados_get_nlp_in(acados_ocp_capsule);
-    ocp_nlp_out *nlp_out = segway_nonlinear_mpc_acados_get_nlp_out(acados_ocp_capsule);
-    ocp_nlp_solver *nlp_solver = segway_nonlinear_mpc_acados_get_nlp_solver(acados_ocp_capsule);
-    void *nlp_opts = segway_nonlinear_mpc_acados_get_nlp_opts(acados_ocp_capsule);
+    ocp_nlp_config *nlp_config = segway_linear_mpc_acados_get_nlp_config(acados_ocp_capsule);
+    ocp_nlp_dims *nlp_dims = segway_linear_mpc_acados_get_nlp_dims(acados_ocp_capsule);
+    ocp_nlp_in *nlp_in = segway_linear_mpc_acados_get_nlp_in(acados_ocp_capsule);
+    ocp_nlp_out *nlp_out = segway_linear_mpc_acados_get_nlp_out(acados_ocp_capsule);
+    ocp_nlp_solver *nlp_solver = segway_linear_mpc_acados_get_nlp_solver(acados_ocp_capsule);
+    void *nlp_opts = segway_linear_mpc_acados_get_nlp_opts(acados_ocp_capsule);
     // initial condition
     double lbx0[NBX0];
     double ubx0[NBX0];
@@ -82,10 +82,6 @@ int main()
     ubx0[2] = 0;
     lbx0[3] = 0;
     ubx0[3] = 0;
-    lbx0[4] = 0;
-    ubx0[4] = 0;
-    lbx0[5] = 0;
-    ubx0[5] = 0;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "lbx", lbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "ubx", ubx0);
@@ -96,8 +92,6 @@ int main()
     x_init[1] = 0.0;
     x_init[2] = 0.0;
     x_init[3] = 0.0;
-    x_init[4] = 0.0;
-    x_init[5] = 0.0;
 
     // initial value for control input
     double u0[NU];
@@ -124,7 +118,7 @@ int main()
             ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", u0);
         }
         ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, N, "x", x_init);
-        status = segway_nonlinear_mpc_acados_solve(acados_ocp_capsule);
+        status = segway_linear_mpc_acados_solve(acados_ocp_capsule);
         ocp_nlp_get(nlp_solver, "time_tot", &elapsed_time);
         min_time = MIN(elapsed_time, min_time);
     }
@@ -145,18 +139,18 @@ int main()
 
     if (status == ACADOS_SUCCESS)
     {
-        printf("segway_nonlinear_mpc_acados_solve(): SUCCESS!\n");
+        printf("segway_linear_mpc_acados_solve(): SUCCESS!\n");
     }
     else
     {
-        printf("segway_nonlinear_mpc_acados_solve() failed with status %d.\n", status);
+        printf("segway_linear_mpc_acados_solve() failed with status %d.\n", status);
     }
 
     // get solution
     ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, 0, "kkt_norm_inf", &kkt_norm_inf);
     ocp_nlp_get(nlp_solver, "sqp_iter", &sqp_iter);
 
-    segway_nonlinear_mpc_acados_print_stats(acados_ocp_capsule);
+    segway_linear_mpc_acados_print_stats(acados_ocp_capsule);
 
     printf("\nSolver info:\n");
     printf(" SQP iterations %2d\n minimum time for %d solve %f [ms]\n KKT %e\n",
@@ -165,14 +159,14 @@ int main()
 
 
     // free solver
-    status = segway_nonlinear_mpc_acados_free(acados_ocp_capsule);
+    status = segway_linear_mpc_acados_free(acados_ocp_capsule);
     if (status) {
-        printf("segway_nonlinear_mpc_acados_free() returned status %d. \n", status);
+        printf("segway_linear_mpc_acados_free() returned status %d. \n", status);
     }
     // free solver capsule
-    status = segway_nonlinear_mpc_acados_free_capsule(acados_ocp_capsule);
+    status = segway_linear_mpc_acados_free_capsule(acados_ocp_capsule);
     if (status) {
-        printf("segway_nonlinear_mpc_acados_free_capsule() returned status %d. \n", status);
+        printf("segway_linear_mpc_acados_free_capsule() returned status %d. \n", status);
     }
 
     return status;

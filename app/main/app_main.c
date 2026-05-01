@@ -13,6 +13,7 @@
 #include "main.h"
 #include "mpc_task/mpc_task.h"
 #include "queue_manager/queue_manager.h"
+#include "step_motor/step_manager.h"
 #include "sysview/sysview_macros.h"
 
 void app_main(void *argument) {

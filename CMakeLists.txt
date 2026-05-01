@@ -61,7 +61,7 @@ set(HPIPM_BUILD_SHARED_LIBS OFF CACHE BOOL "Disable HPIPM shared lib" FORCE)
 set(BLASFEO_BUILD_SHARED_LIBS OFF CACHE BOOL "Disable BLASFEO shared lib" FORCE)
 
 # 2. Podstawowa konfiguracja modułów Acados
-set(ACADOS_WITH_QPOASES OFF CACHE BOOL "Build with qpOASES" FORCE)
+set(ACADOS_WITH_QPOASES ON CACHE BOOL "Build with qpOASES" FORCE)
 set(ACADOS_WITH_OSQP OFF CACHE BOOL "Build with OSQP" FORCE)
 set(ACADOS_EXAMPLES OFF CACHE BOOL "Build examples" FORCE)
 set(BLASFEO_EXAMPLES OFF CACHE BOOL "Build BLASFEO examples" FORCE)
@@ -95,9 +95,10 @@ add_compile_options(-fno-jump-tables)
 add_subdirectory(${PROJ_PATH}/acados EXCLUDE_FROM_ALL)
 
 # Wymuszamy agresywną optymalizację dla solverów (-O3), a dla samego interfejsu casadi -O0
-target_compile_options(acados PRIVATE "-O3")
-target_compile_options(hpipm PRIVATE "-O3")
-target_compile_options(blasfeo PRIVATE "-O3")
+target_compile_options(acados PRIVATE "-O3" "-w")
+target_compile_options(hpipm PRIVATE "-O3" "-w")
+target_compile_options(blasfeo PRIVATE "-O3" "-w")
+target_compile_options(qpOASES_e PRIVATE "-O3" "-w") 
 # =========================================================================
 
 
@@ -134,7 +135,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} SYSTEM PRIVATE
 )
 
 # Zebranie plików źródłowych wygenerowanego modelu matematycznego z Acados
-file(GLOB ACADOS_MODEL_SRC "${PROJ_PATH}/c_generated_code/segway_nonlinear_mpc_model/*.c")
+file(GLOB ACADOS_MODEL_SRC "${PROJ_PATH}/c_generated_code/segway_linear_mpc_model/*.c")
 
 # Sources
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
@@ -170,16 +171,16 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${PROJ_PATH}/3rdParty/Segger/SYSVIEW/SEGGER_SYSVIEW.c
 
     # Wygenerowany kod Acadosa
-    ${PROJ_PATH}/c_generated_code/acados_solver_segway_nonlinear_mpc.c
+    ${PROJ_PATH}/c_generated_code/acados_solver_segway_linear_mpc.c
     ${ACADOS_MODEL_SRC}
 )
 
-# --- OPTYMALIZACJA ROZMIARU DLA MODELU CASADI ---
-# Wymuszamy flagę -O0 dla wygenerowanego modelu (CasADi), żeby nie puchło.
+# --- OPTYMALIZACJA I WYCISZENIE OSTRZEŻEŃ DLA WYGENEROWANEGO KODU ---
+# Wymuszamy flagę -O0, żeby CasADi nie puchło, oraz -w (lub -Wno-all), żeby wyłączyć ostrzeżenia
 set_source_files_properties(
-    ${PROJ_PATH}/c_generated_code/acados_solver_segway_nonlinear_mpc.c
+    ${PROJ_PATH}/c_generated_code/acados_solver_segway_linear_mpc.c
     ${ACADOS_MODEL_SRC}
-    PROPERTIES COMPILE_OPTIONS "-O0"
+    PROPERTIES COMPILE_OPTIONS "-O0;-w"
 )
 
 # Pass definitions
@@ -220,4 +221,5 @@ target_link_libraries(${EXECUTABLE} PRIVATE
     acados
     hpipm
     blasfeo
+    qpOASES_e
 )

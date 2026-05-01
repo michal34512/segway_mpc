@@ -4,8 +4,9 @@
 #include <math.h>
 
 #define STEP_PULSE_WIDTH_US 10
-#define TIMER_CLOCK_FREQ    550000000
+#define TIMER_CLOCK_FREQ    275000000
 #define TIMER_PRESCALER     ((TIMER_CLOCK_FREQ / 1000000) - 1)
+#define MOTOR_STEPS_PER_REV 200.0f
 
 typedef struct {
     TIM_HandleTypeDef *htim;
@@ -70,39 +71,38 @@ void step_manager_init() {
     }
 }
 
-void step_manager_set_speed(step_motor_id_t motor_id, float steps_per_second) {
+void step_manager_set_speed(step_motor_id_t motor_id, float rad_per_second) {
     if (motor_id >= STEP_MOTOR_COUNT) {
         return;
     }
 
     TIM_HandleTypeDef *htim = motors[motor_id].htim;
     uint32_t channel        = motors[motor_id].channel;
-    uint8_t is_negative     = (steps_per_second < 0.0f) ? 1 : 0;
+    uint8_t is_negative     = (rad_per_second < 0.0f) ? 1 : 0;
     uint8_t pin_state       = is_negative ^ motors[motor_id].dir_inverted;
     HAL_GPIO_WritePin(motors[motor_id].dir_port, motors[motor_id].dir_pin, pin_state ? GPIO_PIN_SET : GPIO_PIN_RESET);
-    float abs_speed = fabsf(steps_per_second);
 
-    // Dynamiczne ustawianie mikrokroku na podstawie rad_speed ze starego algorytmu
-    float rad_speed        = abs_speed * (3.14159265f / 100.0f);
+    float abs_rad_speed    = fabsf(rad_per_second);
+    float abs_steps_speed  = abs_rad_speed * (MOTOR_STEPS_PER_REV / (2.0f * (float)M_PI));
     uint8_t microstep_mode = 1;
     GPIO_PinState ms1 = GPIO_PIN_RESET, ms2 = GPIO_PIN_RESET, ms3 = GPIO_PIN_RESET;
 
-    if (rad_speed < 1.0f) {
+    if (abs_rad_speed < 1.0f) {
         microstep_mode = 16;
         ms1            = GPIO_PIN_SET;
         ms2            = GPIO_PIN_SET;
         ms3            = GPIO_PIN_SET;
-    } else if (rad_speed < 2.0f) {
+    } else if (abs_rad_speed < 2.0f) {
         microstep_mode = 8;
         ms1            = GPIO_PIN_SET;
         ms2            = GPIO_PIN_SET;
         ms3            = GPIO_PIN_RESET;
-    } else if (rad_speed < 4.0f) {
+    } else if (abs_rad_speed < 4.0f) {
         microstep_mode = 4;
         ms1            = GPIO_PIN_RESET;
         ms2            = GPIO_PIN_SET;
         ms3            = GPIO_PIN_RESET;
-    } else if (rad_speed < 6.0f) {
+    } else if (abs_rad_speed < 6.0f) {
         microstep_mode = 2;
         ms1            = GPIO_PIN_SET;
         ms2            = GPIO_PIN_RESET;
@@ -113,8 +113,7 @@ void step_manager_set_speed(step_motor_id_t motor_id, float steps_per_second) {
     HAL_GPIO_WritePin(motors[motor_id].ms2_port, motors[motor_id].ms2_pin, ms2);
     HAL_GPIO_WritePin(motors[motor_id].ms3_port, motors[motor_id].ms3_pin, ms3);
 
-    // Przeskalowanie sprzętowej częstotliwości o tryb mikrokroku
-    float hardware_speed       = abs_speed * (float)microstep_mode;
+    float hardware_speed       = abs_steps_speed * (float)microstep_mode;
     uint32_t max_period        = 0xFFFF;
     float min_steps_per_second = (float)(TIMER_CLOCK_FREQ / (TIMER_PRESCALER + 1)) / (float)max_period;
     if (hardware_speed <= min_steps_per_second) {

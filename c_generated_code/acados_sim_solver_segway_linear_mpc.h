@@ -28,16 +28,16 @@
  * POSSIBILITY OF SUCH DAMAGE.;
  */
 
-#ifndef ACADOS_SIM_segway_nonlinear_mpc_H_
-#define ACADOS_SIM_segway_nonlinear_mpc_H_
+#ifndef ACADOS_SIM_segway_linear_mpc_H_
+#define ACADOS_SIM_segway_linear_mpc_H_
 
 #include "acados_c/sim_interface.h"
 #include "acados_c/external_function_interface.h"
 
-#define SEGWAY_NONLINEAR_MPC_NX     6
-#define SEGWAY_NONLINEAR_MPC_NZ     0
-#define SEGWAY_NONLINEAR_MPC_NU     2
-#define SEGWAY_NONLINEAR_MPC_NP     0
+#define SEGWAY_LINEAR_MPC_NX     4
+#define SEGWAY_LINEAR_MPC_NZ     0
+#define SEGWAY_LINEAR_MPC_NU     2
+#define SEGWAY_LINEAR_MPC_NP     0
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +45,7 @@ extern "C" {
 
 
 // ** capsule for solver data **
-typedef struct segway_nonlinear_mpc_sim_solver_capsule
+typedef struct segway_linear_mpc_sim_solver_capsule
 {
     // acados objects
     sim_in *acados_sim_in;
@@ -78,28 +78,28 @@ typedef struct segway_nonlinear_mpc_sim_solver_capsule
     external_function_param_casadi * sim_gnsf_f_lo_jac_x1_x1dot_u_z;
     external_function_param_casadi * sim_gnsf_get_matrices_fun;
 
-} segway_nonlinear_mpc_sim_solver_capsule;
+} segway_linear_mpc_sim_solver_capsule;
 
 
-ACADOS_SYMBOL_EXPORT int segway_nonlinear_mpc_acados_sim_create(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT int segway_nonlinear_mpc_acados_sim_solve(segway_nonlinear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT int segway_linear_mpc_acados_sim_create(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT int segway_linear_mpc_acados_sim_solve(segway_linear_mpc_sim_solver_capsule *capsule);
 
-ACADOS_SYMBOL_EXPORT int segway_nonlinear_mpc_acados_sim_free(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT int segway_nonlinear_mpc_acados_sim_update_params(segway_nonlinear_mpc_sim_solver_capsule *capsule, double *value, int np);
+ACADOS_SYMBOL_EXPORT int segway_linear_mpc_acados_sim_free(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT int segway_linear_mpc_acados_sim_update_params(segway_linear_mpc_sim_solver_capsule *capsule, double *value, int np);
 
-ACADOS_SYMBOL_EXPORT sim_config * segway_nonlinear_mpc_acados_get_sim_config(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT sim_in * segway_nonlinear_mpc_acados_get_sim_in(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT sim_out * segway_nonlinear_mpc_acados_get_sim_out(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT void * segway_nonlinear_mpc_acados_get_sim_dims(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT sim_opts * segway_nonlinear_mpc_acados_get_sim_opts(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT sim_solver * segway_nonlinear_mpc_acados_get_sim_solver(segway_nonlinear_mpc_sim_solver_capsule *capsule);
-ACADOS_SYMBOL_EXPORT void * segway_nonlinear_mpc_acados_get_sim_mem(segway_nonlinear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT sim_config * segway_linear_mpc_acados_get_sim_config(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT sim_in * segway_linear_mpc_acados_get_sim_in(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT sim_out * segway_linear_mpc_acados_get_sim_out(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT void * segway_linear_mpc_acados_get_sim_dims(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT sim_opts * segway_linear_mpc_acados_get_sim_opts(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT sim_solver * segway_linear_mpc_acados_get_sim_solver(segway_linear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT void * segway_linear_mpc_acados_get_sim_mem(segway_linear_mpc_sim_solver_capsule *capsule);
 
-ACADOS_SYMBOL_EXPORT segway_nonlinear_mpc_sim_solver_capsule * segway_nonlinear_mpc_acados_sim_solver_create_capsule(void);
-ACADOS_SYMBOL_EXPORT int segway_nonlinear_mpc_acados_sim_solver_free_capsule(segway_nonlinear_mpc_sim_solver_capsule *capsule);
+ACADOS_SYMBOL_EXPORT segway_linear_mpc_sim_solver_capsule * segway_linear_mpc_acados_sim_solver_create_capsule(void);
+ACADOS_SYMBOL_EXPORT int segway_linear_mpc_acados_sim_solver_free_capsule(segway_linear_mpc_sim_solver_capsule *capsule);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // ACADOS_SIM_segway_nonlinear_mpc_H_
+#endif  // ACADOS_SIM_segway_linear_mpc_H_

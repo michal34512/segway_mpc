@@ -36,19 +36,19 @@
 #include "acados/utils/print.h"
 #include "acados/utils/math.h"
 #include "acados_c/sim_interface.h"
-#include "acados_sim_solver_segway_nonlinear_mpc.h"
+#include "acados_sim_solver_segway_linear_mpc.h"
 
-#define NX     SEGWAY_NONLINEAR_MPC_NX
-#define NZ     SEGWAY_NONLINEAR_MPC_NZ
-#define NU     SEGWAY_NONLINEAR_MPC_NU
-#define NP     SEGWAY_NONLINEAR_MPC_NP
+#define NX     SEGWAY_LINEAR_MPC_NX
+#define NZ     SEGWAY_LINEAR_MPC_NZ
+#define NU     SEGWAY_LINEAR_MPC_NU
+#define NP     SEGWAY_LINEAR_MPC_NP
 
 
 int main()
 {
     int status = 0;
-    segway_nonlinear_mpc_sim_solver_capsule *capsule = segway_nonlinear_mpc_acados_sim_solver_create_capsule();
-    status = segway_nonlinear_mpc_acados_sim_create(capsule);
+    segway_linear_mpc_sim_solver_capsule *capsule = segway_linear_mpc_acados_sim_solver_create_capsule();
+    status = segway_linear_mpc_acados_sim_create(capsule);
 
     if (status)
     {
@@ -56,10 +56,10 @@ int main()
         exit(1);
     }
 
-    sim_config *acados_sim_config = segway_nonlinear_mpc_acados_get_sim_config(capsule);
-    sim_in *acados_sim_in = segway_nonlinear_mpc_acados_get_sim_in(capsule);
-    sim_out *acados_sim_out = segway_nonlinear_mpc_acados_get_sim_out(capsule);
-    void *acados_sim_dims = segway_nonlinear_mpc_acados_get_sim_dims(capsule);
+    sim_config *acados_sim_config = segway_linear_mpc_acados_get_sim_config(capsule);
+    sim_in *acados_sim_in = segway_linear_mpc_acados_get_sim_in(capsule);
+    sim_out *acados_sim_out = segway_linear_mpc_acados_get_sim_out(capsule);
+    void *acados_sim_dims = segway_linear_mpc_acados_get_sim_dims(capsule);
 
     // initial condition
     double x_current[NX];
@@ -67,16 +67,12 @@ int main()
     x_current[1] = 0.0;
     x_current[2] = 0.0;
     x_current[3] = 0.0;
-    x_current[4] = 0.0;
-    x_current[5] = 0.0;
 
   
     x_current[0] = 0;
     x_current[1] = 0;
     x_current[2] = 0;
     x_current[3] = 0;
-    x_current[4] = 0;
-    x_current[5] = 0;
     
   
 
@@ -100,7 +96,7 @@ int main()
             acados_sim_in, "u", u0);
 
         // solve
-        status = segway_nonlinear_mpc_acados_sim_solve(capsule);
+        status = segway_linear_mpc_acados_sim_solve(capsule);
         if (status != ACADOS_SUCCESS)
         {
             printf("acados_solve() failed with status %d.\n", status);
@@ -123,12 +119,12 @@ int main()
     printf("\nPerformed %d simulation steps with acados integrator successfully.\n\n", n_sim_steps);
 
     // free solver
-    status = segway_nonlinear_mpc_acados_sim_free(capsule);
+    status = segway_linear_mpc_acados_sim_free(capsule);
     if (status) {
-        printf("segway_nonlinear_mpc_acados_sim_free() returned status %d. \n", status);
+        printf("segway_linear_mpc_acados_sim_free() returned status %d. \n", status);
     }
 
-    segway_nonlinear_mpc_acados_sim_solver_free_capsule(capsule);
+    segway_linear_mpc_acados_sim_solver_free_capsule(capsule);
 
     return status;
 }
