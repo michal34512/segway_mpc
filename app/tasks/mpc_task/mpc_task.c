@@ -19,6 +19,11 @@
 #define SENSORS_TASK_STACK_SIZE (1024)
 #define MAX_WHEEL_SPEED_RADS    10.0f
 
+// Parametry zgodne z symulacją
+#define SYM_DT        0.02f
+#define WHEEL_RADIUS  0.04f
+#define WHEEL_SPACING 0.2f
+
 static osThreadId_t mpc_task_handle;
 static uint32_t mpc_task_buffer[SENSORS_TASK_STACK_SIZE];
 static StaticTask_t mpc_task_control_block;
@@ -74,18 +79,11 @@ static void mpc_task(void *argument) {
     pitch_offset /= (float)target_samples;
     LOG_INFO("MPC: Calibration done. Offset: %.2f deg\r\n", pitch_offset);
 
-    // Parametry zgodne z symulacją
-    const float dt      = 0.02f;  // 50 Hz (FPS=50 w Pythonie)
-    const float R_wheel = 0.04f;
-    const float L_width = 0.2f;
-
     // ZMIANA: nx = 4, nu = 2
     double x0[SEGWAY_LINEAR_MPC_NX] = {0.0};
     double u0[SEGWAY_LINEAR_MPC_NU] = {0.0};
 
     // Usunięto niepotrzebną zmienną current_pos_x - nie całkujemy już pozycji absolutnej dla MPC
-    float current_vel_L = 0.0f;  // Prędkość liniowa lewego koła [m/s]
-    float current_vel_R = 0.0f;  // Prędkość liniowa prawego koła [m/s]
 
     // Warm-start horyzontu
     for (int i = 0; i <= mpc_capsule->nlp_dims->N; i++) {
@@ -99,15 +97,22 @@ static void mpc_task(void *argument) {
 
     while (1) {
         if (xSemaphoreTake(mpc_semaphore_handle, portMAX_DELAY) == pdPASS) {
+            step_manager_update_position(SYM_DT);
             imu_data_t imu_data;
             if (PITCH_QUEUE_PEEK(&imu_data) == 0) {
                 // Aplikacja offsetu i konwersja na radiany
                 float phi  = (imu_data.pitch - pitch_offset) * (M_PI / 180.0f);
-                float phip = (imu_data.pitch_dot / 16.4f) * (M_PI / 180.0f);
+                float phip = (imu_data.pitch_dot) * (M_PI / 180.0f);
 
+                float actual_omega_L = -step_manager_get_speed(STEP_MOTOR_1);
+                float actual_omega_R = -step_manager_get_speed(STEP_MOTOR_2);
+
+                float current_vel_L = (actual_omega_L + phip) * WHEEL_RADIUS;
+                float current_vel_R = (actual_omega_R + phip) * WHEEL_RADIUS;
                 // Obliczamy prędkość liniową środka robota (xp) oraz prędkość obrotu (psip)
+
                 float xp   = (current_vel_L + current_vel_R) / 2.0f;
-                float psip = (current_vel_R - current_vel_L) / L_width;
+                float psip = (current_vel_R - current_vel_L) / WHEEL_SPACING;
 
                 // ZMIANA: Nowy 4-elementowy wektor stanu: state = [xp, phi, phip, psip]
                 x0[0] = xp;    // xp (Linear velocity)
@@ -142,12 +147,12 @@ static void mpc_task(void *argument) {
                     float a_R = (float)u0[1];
 
                     // 2. Całkujemy do prędkości liniowych kół [m/s]
-                    float v_L_target = current_vel_L + a_L * dt;
-                    float v_R_target = current_vel_R + a_R * dt;
+                    float v_L_target = current_vel_L + a_L * SYM_DT;
+                    float v_R_target = current_vel_R + a_R * SYM_DT;
 
                     // 3. Poprawka kinematyczna (omega = v/R - phip)
-                    float omega_L = (v_L_target / R_wheel) - phip;
-                    float omega_R = (v_R_target / R_wheel) - phip;
+                    float omega_L = (v_L_target / WHEEL_RADIUS) - phip;
+                    float omega_R = (v_R_target / WHEEL_RADIUS) - phip;
 
                     // Ograniczenie prędkości kół z zabezpieczeniem anti-windup
                     if (omega_L > MAX_WHEEL_SPEED_RADS)
@@ -161,23 +166,22 @@ static void mpc_task(void *argument) {
                         omega_R = -MAX_WHEEL_SPEED_RADS;
 
                     // Przeliczenie z powrotem na prędkość liniową wózka, aby zapobiec odkładaniu błędu
-                    v_L_target = (omega_L + phip) * R_wheel;
-                    v_R_target = (omega_R + phip) * R_wheel;
+                    v_L_target = (omega_L + phip) * WHEEL_RADIUS;
+                    v_R_target = (omega_R + phip) * WHEEL_RADIUS;
 
-                    // Update stanów dla następnej iteracji
-                    current_vel_L = v_L_target;
-                    current_vel_R = v_R_target;
-
+                    // LOG_INFO("Setting speed %f, %f\n\r", -omega_L, -omega_R);
                     step_manager_set_speed(STEP_MOTOR_1, -omega_L);
                     step_manager_set_speed(STEP_MOTOR_2, -omega_R);
 
                 } else {
                     LOG_ERROR("MPC Error: %d\r\n", status);  // Opcjonalny log żeby wiedzieć, jak padnie całkowicie
-                    current_vel_L = 0;
-                    current_vel_R = 0;
                     step_manager_set_speed(STEP_MOTOR_1, 0);
                     step_manager_set_speed(STEP_MOTOR_2, 0);
                 }
+            } else {
+                LOG_ERROR("Pitch queue Error: %d\r\n", status);
+                step_manager_set_speed(STEP_MOTOR_1, 0);
+                step_manager_set_speed(STEP_MOTOR_2, 0);
             }
         }
     }

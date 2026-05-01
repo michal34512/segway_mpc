@@ -25,6 +25,7 @@ int32_t queue_manager_overwrite_isr(const queue_type_t type, void *item, BaseTyp
 int32_t queue_manager_peek(const queue_type_t type, void *item);
 
 #define PITCH_QUEUE_PEEK(ITEM)              queue_manager_peek(QUEUE_TYPE_PITCH, ITEM)
+#define PITCH_QUEUE_OVERRIDE(ITEM)          queue_manager_overwrite(QUEUE_TYPE_PITCH, ITEM)
 #define PITCH_QUEUE_OVERRIDE_ISR(ITEM, HPT) queue_manager_overwrite_isr(QUEUE_TYPE_PITCH, ITEM, HPT)
 
 #endif  // APP_DRIVERS_QUEUE_MANAGER_QUEUE_MANAGER_H_

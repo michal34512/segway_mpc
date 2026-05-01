@@ -26,14 +26,10 @@ void imu_task(void *argument) {
     (void)argument;
     while (1) {
         if (xSemaphoreTake(imu_data_ready_sem, portMAX_DELAY) == pdTRUE) {
-            float pitch                         = Read_DMP_pitch();
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            // Jeśli posiadasz makro PITCH_QUEUE_OVERRIDE (wersję bez _ISR),
-            // użyj jej tutaj. Jeśli nie, wersja _ISR zadziała również na ARM Cortex-M.
-            PITCH_QUEUE_OVERRIDE_ISR(&pitch, &xHigherPriorityTaskWoken);
-            if (xHigherPriorityTaskWoken) {
-                portYIELD();
-            }
+            imu_data_t imu_data;
+            imu_data.pitch     = Read_DMP_pitch();
+            imu_data.pitch_dot = Read_DMP_pitch_dot();
+            PITCH_QUEUE_OVERRIDE(&imu_data);
         }
     }
 }

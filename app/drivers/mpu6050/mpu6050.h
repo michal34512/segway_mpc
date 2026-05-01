@@ -372,6 +372,7 @@ uint8_t MPU6050_getDeviceID(void);   // 读取MPU6050的ID
 void MPU6050_InitGyro_Offset(void);  // 初始化陀螺仪偏置
 void DMP_Init(void);
 float Read_DMP_pitch(void);
+float Read_DMP_pitch_dot(void);
 int Read_Temperature(void);
 
 #ifdef __cplusplus

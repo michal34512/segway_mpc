@@ -290,6 +290,10 @@ float Read_DMP_pitch(void) {
     }
     return 0.f;
 }
+
+float Read_DMP_pitch_dot(void) {
+    return (float)gyro[1] / 16.4f;
+}
 /**************************************************************************
  函数功能：读取MPU6050内置温度传感器数据
  入口参数：无

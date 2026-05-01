@@ -20,6 +20,9 @@ typedef struct {
     uint16_t ms2_pin;
     GPIO_TypeDef *ms3_port;
     uint16_t ms3_pin;
+
+    float current_speed_rad_s;
+    float current_position_rad;
 } motor_config_t;
 
 static motor_config_t motors[STEP_MOTOR_COUNT] = {
@@ -136,4 +139,24 @@ void step_manager_step(step_motor_id_t motor_id) {
         return;
     }
     HAL_TIM_GenerateEvent(motors[motor_id].htim, TIM_EVENTSOURCE_UPDATE);
+}
+
+float step_manager_get_speed(step_motor_id_t motor_id) {
+    if (motor_id >= STEP_MOTOR_COUNT) {
+        return 0.0f;
+    }
+    return motors[motor_id].current_speed_rad_s;
+}
+
+float step_manager_get_position(step_motor_id_t motor_id) {
+    if (motor_id >= STEP_MOTOR_COUNT) {
+        return 0.0f;
+    }
+    return motors[motor_id].current_position_rad;
+}
+
+void step_manager_update_position(float dt) {
+    for (int i = 0; i < STEP_MOTOR_COUNT; i++) {
+        motors[i].current_position_rad += motors[i].current_speed_rad_s * dt;
+    }
 }
