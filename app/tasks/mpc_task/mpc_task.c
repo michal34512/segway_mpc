@@ -12,12 +12,14 @@
 #include "queue_manager/queue_manager.h"
 #include "step_motor/step_manager.h"
 
-#define SUCCESS HPIPM_SUCCESS
-#include "acados_solver_segway_linear_mpc.h"
-#undef SUCCESS
+// Nasz wygenerowany plik z macierzami i definicjami (MPC_NX = 6, MPC_U_LEN = 40)
+#include "mpc_data.h"
 
 #define SENSORS_TASK_STACK_SIZE (1024)
 #define MAX_WHEEL_SPEED_RADS    10.0f
+#define MAX_FGM_ITER            30
+#define U_MIN                   -100.0f
+#define U_MAX                   100.0f
 
 // Parametry zgodne z symulacją
 #define SYM_DT        0.02f
@@ -38,8 +40,59 @@ static const osThreadAttr_t mpc_task_attributes = {
 
 static SemaphoreHandle_t mpc_semaphore_handle;
 
-// ZMIANA: Zmiana nazwy struktury pamięci na liniową
-static segway_linear_mpc_solver_capsule mpc_capsule_memory;
+// Bufory FGM
+static float u_opt[MPC_U_LEN];
+static float y_vec[MPC_U_LEN];
+static float grad[MPC_U_LEN];
+
+void solve_fgm_mpc(const float *x0, float *u_out) {
+    // Warm-start
+    for (int i = 0; i < MPC_U_LEN - MPC_NU; i++) {
+        u_opt[i] = u_opt[i + MPC_NU];
+        y_vec[i] = u_opt[i];
+    }
+    // Wyzerowanie ogona
+    for (int i = MPC_U_LEN - MPC_NU; i < MPC_U_LEN; i++) {
+        u_opt[i] = 0.0f;
+        y_vec[i] = 0.0f;
+    }
+
+    float t = 1.0f;
+
+    for (int iter = 0; iter < MAX_FGM_ITER; iter++) {
+        // grad = H * y + F * x0
+        for (int i = 0; i < MPC_U_LEN; i++) {
+            grad[i] = 0.0f;
+            for (int j = 0; j < MPC_U_LEN; j++) {
+                grad[i] += MPC_H[i * MPC_U_LEN + j] * y_vec[j];
+            }
+            for (int k = 0; k < MPC_NX; k++) {
+                grad[i] += MPC_F[i * MPC_NX + k] * x0[k];
+            }
+        }
+
+        float t_next = (1.0f + sqrtf(1.0f + 4.0f * t * t)) / 2.0f;
+        float beta   = (t - 1.0f) / t_next;
+        t            = t_next;
+
+        // Gradient descent step + clipping
+        for (int i = 0; i < MPC_U_LEN; i++) {
+            float u_old = u_opt[i];
+            float u_new = y_vec[i] - MPC_L_INV * grad[i];
+
+            if (u_new > U_MAX)
+                u_new = U_MAX;
+            if (u_new < U_MIN)
+                u_new = U_MIN;
+
+            u_opt[i] = u_new;
+            y_vec[i] = u_opt[i] + beta * (u_opt[i] - u_old);
+        }
+    }
+
+    u_out[0] = u_opt[0];
+    u_out[1] = u_opt[1];
+}
 
 void mpc_wake_up() {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -51,22 +104,11 @@ static void mpc_task(void *argument) {
     (void)argument;
     portTASK_USES_FLOATING_POINT();
 
-    // ZMIANA: Użycie nowego, lekkiego solwera LMPC
-    segway_linear_mpc_solver_capsule *mpc_capsule = &mpc_capsule_memory;
-    int status                                    = segway_linear_mpc_acados_create(mpc_capsule);
-
-    if (status != 0) {
-        LOG_ERROR("Acados create failed: %d\r\n", status);
-        while (1) {
-            vTaskDelay(1000);
-        }
-    }
-
     // --- KALIBRACJA OFFSETU PIONU ---
     LOG_INFO("MPC: Calibrating pitch offset (Stay still!)...\r\n");
     float pitch_offset       = 0.0f;
     int calibration_samples  = 0;
-    const int target_samples = 20;  // Zbieramy 20 próbek (ok. 0.4s przy 50Hz)
+    const int target_samples = 20;
 
     while (calibration_samples < target_samples) {
         imu_data_t imu_raw;
@@ -79,107 +121,82 @@ static void mpc_task(void *argument) {
     pitch_offset /= (float)target_samples;
     LOG_INFO("MPC: Calibration done. Offset: %.2f deg\r\n", pitch_offset);
 
-    // ZMIANA: nx = 4, nu = 2
-    double x0[SEGWAY_LINEAR_MPC_NX] = {0.0};
-    double u0[SEGWAY_LINEAR_MPC_NU] = {0.0};
-
-    // Usunięto niepotrzebną zmienną current_pos_x - nie całkujemy już pozycji absolutnej dla MPC
-
-    // Warm-start horyzontu
-    for (int i = 0; i <= mpc_capsule->nlp_dims->N; i++) {
-        ocp_nlp_out_set(
-          mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, mpc_capsule->nlp_in, i, "x", x0);
-        ocp_nlp_out_set(
-          mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, mpc_capsule->nlp_in, i, "u", u0);
-    }
+    // Pozycja docelowa (0.0 = stój tam, gdzie zostałeś włączony)
+    float target_x = 0.0f;
 
     HAL_TIM_Base_Start_IT(&htim3);
 
     while (1) {
         if (xSemaphoreTake(mpc_semaphore_handle, portMAX_DELAY) == pdPASS) {
+            // Aktualizacja w timerach (zapisuje aktualną prędkość * dt do pozycji)
             step_manager_update_position(SYM_DT);
+
             imu_data_t imu_data;
             if (PITCH_QUEUE_PEEK(&imu_data) == 0) {
-                // Aplikacja offsetu i konwersja na radiany
+                // 1. Kąt z IMU w radianach
                 float phi  = (imu_data.pitch - pitch_offset) * (M_PI / 180.0f);
-                float phip = (imu_data.pitch_dot) * (M_PI / 180.0f);
+                float phip = imu_data.pitch_dot * (M_PI / 180.0f);
 
+                // 2. Pobieranie gotowych danych ze step_managera
                 float actual_omega_L = -step_manager_get_speed(STEP_MOTOR_1);
                 float actual_omega_R = -step_manager_get_speed(STEP_MOTOR_2);
 
-                float current_vel_L = (actual_omega_L + phip) * WHEEL_RADIUS;
-                float current_vel_R = (actual_omega_R + phip) * WHEEL_RADIUS;
-                // Obliczamy prędkość liniową środka robota (xp) oraz prędkość obrotu (psip)
+                float actual_pos_L = -step_manager_get_position(STEP_MOTOR_1);
+                float actual_pos_R = -step_manager_get_position(STEP_MOTOR_2);
 
-                float xp   = (current_vel_L + current_vel_R) / 2.0f;
-                float psip = (current_vel_R - current_vel_L) / WHEEL_SPACING;
+                // ========================================================
+                // 3. OBLICZENIA DLA MPC (Zmienne stanu wg modelu SymPy)
+                // ========================================================
+                float current_vel_L_mpc = actual_omega_L * WHEEL_RADIUS;
+                float current_vel_R_mpc = actual_omega_R * WHEEL_RADIUS;
 
-                // ZMIANA: Nowy 4-elementowy wektor stanu: state = [xp, phi, phip, psip]
-                x0[0] = xp;    // xp (Linear velocity)
-                x0[1] = phi;   // phi (Pitch - teraz na indeksie 1!)
-                x0[2] = phip;  // phip (Pitch rate)
-                x0[3] = psip;  // psip (Yaw rate)
+                // Prędkość liniowa kół
+                float xp = (current_vel_L_mpc + current_vel_R_mpc) / 2.0f;
 
-                ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,
-                                              mpc_capsule->nlp_dims,
-                                              mpc_capsule->nlp_in,
-                                              mpc_capsule->nlp_out,
-                                              0,
-                                              "lbx",
-                                              x0);
-                ocp_nlp_constraints_model_set(mpc_capsule->nlp_config,
-                                              mpc_capsule->nlp_dims,
-                                              mpc_capsule->nlp_in,
-                                              mpc_capsule->nlp_out,
-                                              0,
-                                              "ubx",
-                                              x0);
+                // Pozycja liniowa z kół (średni przejechany dystans) + wpływ pochylenia robota na środek ciężkości
+                float x_wheels = ((actual_pos_L + actual_pos_R) / 2.0f) * WHEEL_RADIUS;
 
-                // ZMIANA: Wywołanie solve dla liniowego modelu
-                status = segway_linear_mpc_acados_solve(mpc_capsule);
+                // 4. Budowa Wektora Stanu
+                float x0[MPC_NX];
+                x0[0] = x_wheels;  // Błąd pozycji X
+                x0[1] = xp;        // Prędkość
+                x0[2] = phi;       // Pochylenie
+                x0[3] = phip;      // Prędkość pochylania
+                x0[4] = 0.0f;      // Ignorujemy kąt skrętu (Psi)
+                x0[5] = 0.0f;      // Ignorujemy prędkość skręcania (Psip)
 
-                // ZMIANA: qpOASES może czasem zwrócić 2 (max iter reached), co jest nadal użytecznym wynikiem
-                if (status == 0 || status == 2) {
-                    ocp_nlp_out_get(mpc_capsule->nlp_config, mpc_capsule->nlp_dims, mpc_capsule->nlp_out, 0, "u", u0);
+                // 5. Rozwiązanie MPC
+                float u0[MPC_NU];
+                solve_fgm_mpc(x0, u0);
 
-                    // MPC wypluwa przyspieszenia a_L i a_R [m/s^2]
-                    float a_L = (float)u0[0];
-                    float a_R = (float)u0[1];
+                float a_L = u0[0];
+                float a_R = u0[1];
 
-                    // 2. Całkujemy do prędkości liniowych kół [m/s]
-                    float v_L_target = current_vel_L + a_L * SYM_DT;
-                    float v_R_target = current_vel_R + a_R * SYM_DT;
+                // 6. Całkowanie do docelowych prędkości wg modelu SymPy
+                float v_L_target = current_vel_L_mpc + a_L * SYM_DT;
+                float v_R_target = current_vel_R_mpc + a_R * SYM_DT;
 
-                    // 3. Poprawka kinematyczna (omega = v/R - phip)
-                    float omega_L = (v_L_target / WHEEL_RADIUS) - phip;
-                    float omega_R = (v_R_target / WHEEL_RADIUS) - phip;
+                // 7. Tłumaczenie na rad/s
+                float omega_L = v_L_target / WHEEL_RADIUS;
+                float omega_R = v_R_target / WHEEL_RADIUS;
 
-                    // Ograniczenie prędkości kół z zabezpieczeniem anti-windup
-                    if (omega_L > MAX_WHEEL_SPEED_RADS)
-                        omega_L = MAX_WHEEL_SPEED_RADS;
-                    else if (omega_L < -MAX_WHEEL_SPEED_RADS)
-                        omega_L = -MAX_WHEEL_SPEED_RADS;
+                // 8. Clipping i zadanie prędkości
+                if (omega_L > MAX_WHEEL_SPEED_RADS)
+                    omega_L = MAX_WHEEL_SPEED_RADS;
+                if (omega_L < -MAX_WHEEL_SPEED_RADS)
+                    omega_L = -MAX_WHEEL_SPEED_RADS;
+                if (omega_R > MAX_WHEEL_SPEED_RADS)
+                    omega_R = MAX_WHEEL_SPEED_RADS;
+                if (omega_R < -MAX_WHEEL_SPEED_RADS)
+                    omega_R = -MAX_WHEEL_SPEED_RADS;
 
-                    if (omega_R > MAX_WHEEL_SPEED_RADS)
-                        omega_R = MAX_WHEEL_SPEED_RADS;
-                    else if (omega_R < -MAX_WHEEL_SPEED_RADS)
-                        omega_R = -MAX_WHEEL_SPEED_RADS;
+                // LOG_INFO("X: %.3f | X_err: %.3f | Phi: %.2f\n\r", global_pos_x, x0[0], imu_data.pitch);
 
-                    // Przeliczenie z powrotem na prędkość liniową wózka, aby zapobiec odkładaniu błędu
-                    v_L_target = (omega_L + phip) * WHEEL_RADIUS;
-                    v_R_target = (omega_R + phip) * WHEEL_RADIUS;
+                step_manager_set_speed(STEP_MOTOR_1, -omega_L);
+                step_manager_set_speed(STEP_MOTOR_2, -omega_R);
 
-                    // LOG_INFO("Setting speed %f, %f\n\r", -omega_L, -omega_R);
-                    step_manager_set_speed(STEP_MOTOR_1, -omega_L);
-                    step_manager_set_speed(STEP_MOTOR_2, -omega_R);
-
-                } else {
-                    LOG_ERROR("MPC Error: %d\r\n", status);  // Opcjonalny log żeby wiedzieć, jak padnie całkowicie
-                    step_manager_set_speed(STEP_MOTOR_1, 0);
-                    step_manager_set_speed(STEP_MOTOR_2, 0);
-                }
             } else {
-                LOG_ERROR("Pitch queue Error: %d\r\n", status);
+                LOG_ERROR("IMU Data missing\r\n");
                 step_manager_set_speed(STEP_MOTOR_1, 0);
                 step_manager_set_speed(STEP_MOTOR_2, 0);
             }

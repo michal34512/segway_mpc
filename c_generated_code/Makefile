@@ -37,10 +37,9 @@
 # model
 MODEL_SRC=
 
-MODEL_SRC+= segway_linear_mpc_model/segway_linear_mpc_expl_ode_fun.c
-MODEL_SRC+= segway_linear_mpc_model/segway_linear_mpc_expl_vde_forw.c
-MODEL_SRC+= segway_linear_mpc_model/segway_linear_mpc_expl_vde_adj.c
-MODEL_SRC+= segway_linear_mpc_model/segway_linear_mpc_expl_ode_hess.c
+MODEL_SRC+= segway_linear_mpc_model/segway_linear_mpc_dyn_disc_phi_fun.c
+MODEL_SRC+= segway_linear_mpc_model/segway_linear_mpc_dyn_disc_phi_fun_jac.c
+MODEL_SRC+= segway_linear_mpc_model/segway_linear_mpc_dyn_disc_phi_fun_jac_hess.c
 
 MODEL_OBJ := $(MODEL_SRC:.c=.o)
 # optimal control problem - mostly CasADi exports
@@ -51,14 +50,6 @@ OCP_SRC=
 OCP_SRC+= acados_solver_segway_linear_mpc.c
 
 OCP_OBJ := $(OCP_SRC:.c=.o)
-# for sim solver
-SIM_SRC= acados_sim_solver_segway_linear_mpc.c
-SIM_OBJ := $(SIM_SRC:.c=.o)
-
-# for target example_sim
-EX_SIM_SRC= main_sim_segway_linear_mpc.c
-EX_SIM_OBJ := $(EX_SIM_SRC:.c=.o)
-EX_SIM_EXE := $(EX_SIM_SRC:.c=)
 # for target example
 EX_SRC= main_segway_linear_mpc.c
 EX_OBJ := $(EX_SRC:.c=.o)
@@ -68,7 +59,6 @@ EX_EXE := $(EX_SRC:.c=)
 # combine model, (potentially) sim and ocp object files
 OBJ=
 OBJ+= $(MODEL_OBJ)
-OBJ+= $(SIM_OBJ)
 OBJ+= $(OCP_OBJ)
 
 EXTERNAL_DIR=
@@ -78,12 +68,10 @@ INCLUDE_PATH = C:/Users/micha/Desktop/segway_mpc_sim/acados/include
 LIB_PATH = C:\Users\micha\Desktop\segway_mpc_sim\acados\lib
 
 # preprocessor flags for make's implicit rules
-CPPFLAGS += -DACADOS_WITH_QPOASES
 CPPFLAGS+= -I$(INCLUDE_PATH)
 CPPFLAGS+= -I$(INCLUDE_PATH)/acados
 CPPFLAGS+= -I$(INCLUDE_PATH)/blasfeo/include
 CPPFLAGS+= -I$(INCLUDE_PATH)/hpipm/include
-CPPFLAGS+= -I $(INCLUDE_PATH)/qpOASES_e/
 
 
 # define the c-compiler flags for make's implicit rules
@@ -106,23 +94,17 @@ LDLIBS+= -lqpOASES_e
 # libraries
 LIBACADOS_SOLVER=libacados_solver_segway_linear_mpc.dll
 LIBACADOS_OCP_SOLVER=libacados_ocp_solver_segway_linear_mpc.dll
-LIBACADOS_SIM_SOLVER=lib$(SIM_SRC:.c=.dll)
 
 # virtual targets
 .PHONY : all clean
-
-	all: clean example_sim example
-shared_lib: bundled_shared_lib ocp_shared_lib sim_shared_lib
+all: clean example
+shared_lib: ocp_shared_lib
 
 # some linker targets
 example: $(EX_OBJ) $(OBJ)
 	$(CC) $^ -o $(EX_EXE) $(LDFLAGS) $(LDLIBS)
 
-example_sim: $(EX_SIM_OBJ) $(MODEL_OBJ) $(SIM_OBJ)
-	$(CC) $^ -o $(EX_SIM_EXE) $(LDFLAGS) $(LDLIBS)
 
-sim_shared_lib: $(SIM_OBJ) $(MODEL_OBJ)
-	$(CC) -shared $^ -o $(LIBACADOS_SIM_SOLVER) $(LDFLAGS) $(LDLIBS)
 bundled_shared_lib: $(OBJ)
 	$(CC) -shared $^ -o $(LIBACADOS_SOLVER) $(LDFLAGS) $(LDLIBS)
 
@@ -160,33 +142,7 @@ ocp_cython: ocp_cython_o
 	$(LDFLAGS) $(LDLIBS)
 
 
-# Sim Cython targets
-sim_cython_c: sim_shared_lib
-	cython \
-	-o acados_sim_solver_pyx.c \
-	-I $(INCLUDE_PATH)/../interfaces/acados_template/acados_template \
-	$(INCLUDE_PATH)/../interfaces/acados_template/acados_template/acados_sim_solver_pyx.pyx \
-	-I C:\Users\micha\Desktop\segway_mpc_sim\c_generated_code \
 
-sim_cython_o: sim_cython_c
-	$(CC) $(ACADOS_FLAGS) -c -O2 \
-	-fPIC \
-	-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION \
-	-o acados_sim_solver_pyx.o \
-	-I $(INCLUDE_PATH)/blasfeo/include/ \
-	-I $(INCLUDE_PATH)/hpipm/include/ \
-	-I $(INCLUDE_PATH) \
-	-I C:\Users\micha\Desktop\segway_mpc_sim\.venv\Lib\site-packages\numpy\_core\include \
-	-I C:\Users\micha\AppData\Local\Programs\Python\Python312\Include \
-	acados_sim_solver_pyx.c \
-
-sim_cython: sim_cython_o
-	$(CC) $(ACADOS_FLAGS) -shared \
-	-o acados_sim_solver_pyx.dll \
-	-Wl,-rpath=$(LIB_PATH) \
-	acados_sim_solver_pyx.o \
-	$(abspath .)/libacados_sim_solver_segway_linear_mpc.dll \
-	$(LDFLAGS) $(LDLIBS)
 
 clean:
 	del \Q *.o 2>nul
@@ -202,8 +158,4 @@ clean_ocp_cython:
 	del \Q acados_ocp_solver_pyx.dll 2>nul
 	del \Q acados_ocp_solver_pyx.o 2>nul
 
-clean_sim_cython:
-	del \Q libacados_sim_solver_segway_linear_mpc.dll 2>nul
-	del \Q acados_sim_solver_segway_linear_mpc.o 2>nul
-	del \Q acados_sim_solver_pyx.dll 2>nul
-	del \Q acados_sim_solver_pyx.o 2>nul
+

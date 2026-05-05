@@ -1,10 +1,9 @@
 /*
 ******************************************************************************
 **
-
 **  File        : LinkerScript.ld
 **
-**  Author		: STM32CubeMX
+**  Author        : STM32CubeMX
 **
 **  Abstract    : Linker script for STM32H725RGVx series
 **                1024Kbytes FLASH and 368Kbytes RAM
@@ -55,8 +54,8 @@ ENTRY(Reset_Handler)
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM) + LENGTH(RAM);    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x5000;     /* 32 KB na standardowy malloc/calloc dla Acadosa */
-_Min_Stack_Size = 0x1000;    /* 4 KB zapasu na główny stos systemowy */
+_Min_Heap_Size = 0x200;      /* required amount of heap  */
+_Min_Stack_Size = 0x400; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
@@ -154,7 +153,7 @@ SECTIONS
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 
-  /* Initialized data sections goes into RAM, load LMA copy after code */
+  /* Initialized data sections goes into DTCMRAM, load LMA copy after code */
   .data :
   {
     . = ALIGN(4);
@@ -166,16 +165,9 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >RAM AT> FLASH
+  } >DTCMRAM AT> FLASH
 
-  .dtcm_acados_heap (NOLOAD):
-  {
-    . = ALIGN(8);
-    *(.dtcm_acados_heap)
-    . = ALIGN(8);
-  } >DTCMRAM
-
-  /* Uninitialized data section */
+  /* Uninitialized data section goes into DTCMRAM */
   . = ALIGN(4);
   .bss :
   {
@@ -189,7 +181,7 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >RAM
+  } >DTCMRAM
 
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
@@ -202,8 +194,6 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-
-
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
@@ -211,14 +201,4 @@ SECTIONS
     libm.a ( * )
     libgcc.a ( * )
   }
-  .acados_heap (NOLOAD) :
-  {
-    . = ALIGN(32);
-    _sacados_heap = .;   /* Opcjonalny symbol początku */
-    *(.acados_heap_mem)
-    . = ALIGN(32);
-    _eacados_heap = .;   /* Opcjonalny symbol końca */
-  } >RAM
 }
-
-

@@ -64,7 +64,7 @@
 #define SEGWAY_LINEAR_MPC_NY0    6
 #define SEGWAY_LINEAR_MPC_NY     6
 #define SEGWAY_LINEAR_MPC_NYN    4
-#define SEGWAY_LINEAR_MPC_N      3
+#define SEGWAY_LINEAR_MPC_N      5
 #define SEGWAY_LINEAR_MPC_NH     0
 #define SEGWAY_LINEAR_MPC_NHN    0
 #define SEGWAY_LINEAR_MPC_NH0    0
@@ -98,13 +98,11 @@ typedef struct segway_linear_mpc_solver_capsule
 
     // dynamics
 
-    external_function_external_param_casadi *expl_vde_forw;
-    external_function_external_param_casadi *expl_vde_forw_p;
-    external_function_external_param_casadi *expl_ode_fun;
-    external_function_external_param_casadi *expl_vde_adj;
+    external_function_external_param_casadi *discr_dyn_phi_fun;
+    external_function_external_param_casadi *discr_dyn_phi_fun_jac_ut_xt;
 
-    external_function_external_param_casadi *expl_ode_hess;
 
+    external_function_external_param_casadi *discr_dyn_phi_fun_jac_ut_xt_hess;
 
 
     // cost

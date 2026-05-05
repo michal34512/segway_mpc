@@ -153,8 +153,8 @@ void segway_linear_mpc_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, c
 
     nlp_solver_plan->nlp_solver = SQP_RTI;
 
-    nlp_solver_plan->ocp_qp_solver_plan.qp_solver = FULL_CONDENSING_QPOASES;
-    nlp_solver_plan->relaxed_ocp_qp_solver_plan.qp_solver = FULL_CONDENSING_QPOASES;
+    nlp_solver_plan->ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
+    nlp_solver_plan->relaxed_ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
     nlp_solver_plan->nlp_cost[0] = LINEAR_LS;
     for (int i = 1; i < N; i++)
         nlp_solver_plan->nlp_cost[i] = LINEAR_LS;
@@ -163,8 +163,9 @@ void segway_linear_mpc_acados_create_set_plan(ocp_nlp_plan_t* nlp_solver_plan, c
 
     for (int i = 0; i < N; i++)
     {
-        nlp_solver_plan->nlp_dynamics[i] = CONTINUOUS_MODEL;
-        nlp_solver_plan->sim_solver_plan[i].sim_solver = ERK;
+        nlp_solver_plan->nlp_dynamics[i] = DISCRETE_MODEL;
+        // discrete dynamics does not need sim solver option, this field is ignored
+        nlp_solver_plan->sim_solver_plan[i].sim_solver = INVALID_SIM_SOLVER;
     }
 
     nlp_solver_plan->nlp_constraints[0] = BGH;
@@ -345,29 +346,27 @@ void segway_linear_mpc_acados_create_setup_functions(segway_linear_mpc_solver_ca
 
 
     
-        // explicit ode
-        capsule->expl_vde_forw = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*N);
-        for (int i = 0; i < N; i++) {
-            MAP_CASADI_FNC(expl_vde_forw[i], segway_linear_mpc_expl_vde_forw);
+        // discrete dynamics
+        capsule->discr_dyn_phi_fun = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*N);
+        for (int i = 0; i < N; i++)
+        {
+            MAP_CASADI_FNC(discr_dyn_phi_fun[i], segway_linear_mpc_dyn_disc_phi_fun);
         }
 
-        
-
-        capsule->expl_ode_fun = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*N);
-        for (int i = 0; i < N; i++) {
-            MAP_CASADI_FNC(expl_ode_fun[i], segway_linear_mpc_expl_ode_fun);
-        }
-
-        capsule->expl_vde_adj = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*N);
-        for (int i = 0; i < N; i++) {
-            MAP_CASADI_FNC(expl_vde_adj[i], segway_linear_mpc_expl_vde_adj);
-        }
-        capsule->expl_ode_hess = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*N);
-        for (int i = 0; i < N; i++) {
-            MAP_CASADI_FNC(expl_ode_hess[i], segway_linear_mpc_expl_ode_hess);
+        capsule->discr_dyn_phi_fun_jac_ut_xt = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*N);
+        for (int i = 0; i < N; i++)
+        {
+            MAP_CASADI_FNC(discr_dyn_phi_fun_jac_ut_xt[i], segway_linear_mpc_dyn_disc_phi_fun_jac);
         }
 
     
+
+    
+        capsule->discr_dyn_phi_fun_jac_ut_xt_hess = (external_function_external_param_casadi *) malloc(sizeof(external_function_external_param_casadi)*N);
+        for (int i = 0; i < N; i++)
+        {
+            MAP_CASADI_FNC(discr_dyn_phi_fun_jac_ut_xt_hess[i], segway_linear_mpc_dyn_disc_phi_fun_jac_hess);
+        }
     } // N > 0
 
 #undef MAP_CASADI_FNC
@@ -428,7 +427,9 @@ void segway_linear_mpc_acados_setup_nlp_in(segway_linear_mpc_solver_capsule* cap
         cost_scaling[0] = 0.02;
         cost_scaling[1] = 0.02;
         cost_scaling[2] = 0.02;
-        cost_scaling[3] = 1;
+        cost_scaling[3] = 0.02;
+        cost_scaling[4] = 0.02;
+        cost_scaling[5] = 1;
         for (int i = 0; i <= N; i++)
         {
             ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "scaling", &cost_scaling[i]);
@@ -441,11 +442,13 @@ void segway_linear_mpc_acados_setup_nlp_in(segway_linear_mpc_solver_capsule* cap
     /**** Dynamics ****/
     for (int i = 0; i < N; i++)
     {
-        ocp_nlp_dynamics_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "expl_vde_forw", &capsule->expl_vde_forw[i]);
+        ocp_nlp_dynamics_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "disc_dyn_fun", &capsule->discr_dyn_phi_fun[i]);
+        ocp_nlp_dynamics_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "disc_dyn_fun_jac",
+                                   &capsule->discr_dyn_phi_fun_jac_ut_xt[i]);
         
-        ocp_nlp_dynamics_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "expl_ode_fun", &capsule->expl_ode_fun[i]);
-        ocp_nlp_dynamics_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "expl_vde_adj", &capsule->expl_vde_adj[i]);
-        ocp_nlp_dynamics_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "expl_ode_hess", &capsule->expl_ode_hess[i]);
+        
+        ocp_nlp_dynamics_model_set_external_param_fun(nlp_config, nlp_dims, nlp_in, i, "disc_dyn_fun_jac_hess",
+                                   &capsule->discr_dyn_phi_fun_jac_ut_xt_hess[i]);
     }
 
     /**** Cost ****/
@@ -732,46 +735,26 @@ static void segway_linear_mpc_acados_create_set_opts(segway_linear_mpc_solver_ca
     int globalization_full_step_dual = 0;
     ocp_nlp_solver_opts_set(nlp_config, capsule->nlp_opts, "globalization_full_step_dual", &globalization_full_step_dual);
 
-    // set collocation type (relevant for implicit integrators)
-    sim_collocation_type collocation_type = GAUSS_LEGENDRE;
-    for (int i = 0; i < N; i++)
-        ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_collocation_type", &collocation_type);
-
-    // set up sim_method_num_steps
-    // all sim_method_num_steps are identical
-    int sim_method_num_steps = 1;
-    for (int i = 0; i < N; i++)
-        ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_num_steps", &sim_method_num_steps);
-
-    // set up sim_method_num_stages
-    // all sim_method_num_stages are identical
-    int sim_method_num_stages = 1;
-    for (int i = 0; i < N; i++)
-        ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_num_stages", &sim_method_num_stages);
-
-    int newton_iter_val = 3;
-    for (int i = 0; i < N; i++)
-        ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_newton_iter", &newton_iter_val);
-
-    double newton_tol_val = 0;
-    for (int i = 0; i < N; i++)
-        ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_newton_tol", &newton_tol_val);
-
-    // set up sim_method_jac_reuse
-    bool tmp_bool = (bool) 0;
-    for (int i = 0; i < N; i++)
-        ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_jac_reuse", &tmp_bool);
-
     double levenberg_marquardt = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "levenberg_marquardt", &levenberg_marquardt);
 
     /* options QP solver */
+    int qp_solver_cond_N;const int qp_solver_cond_N_ori = 5;
+    qp_solver_cond_N = N < qp_solver_cond_N_ori ? N : qp_solver_cond_N_ori; // use the minimum value here
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_N", &qp_solver_cond_N);
 
     int nlp_solver_ext_qp_res = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "ext_qp_res", &nlp_solver_ext_qp_res);
 
     bool store_iterates = false;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "store_iterates", &store_iterates);
+    // set HPIPM mode: should be done before setting other QP solver options
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_hpipm_mode", "SPEED");
+
+
+
+    int qp_solver_t0_init = 2;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_t0_init", &qp_solver_t0_init);
 
 
 
@@ -801,6 +784,12 @@ static void segway_linear_mpc_acados_create_set_opts(segway_linear_mpc_solver_ca
 
     int print_level = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "print_level", &print_level);
+    int qp_solver_cond_ric_alg = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_ric_alg", &qp_solver_cond_ric_alg);
+
+    int qp_solver_ric_alg = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_ric_alg", &qp_solver_ric_alg);
+
 
     int ext_cost_num_hess = 0;
 }
@@ -909,8 +898,22 @@ int segway_linear_mpc_acados_create_with_discretization(segway_linear_mpc_solver
  */
 int segway_linear_mpc_acados_update_qp_solver_cond_N(segway_linear_mpc_solver_capsule* capsule, int qp_solver_cond_N)
 {
-    printf("\nacados_update_qp_solver_cond_N() not implemented, since no partial condensing solver is used!\n\n");
-    exit(1);
+    // 1) destroy solver
+    ocp_nlp_solver_destroy(capsule->nlp_solver);
+
+    // 2) set new value for "qp_cond_N"
+    const int N = capsule->nlp_solver_plan->N;
+    if(qp_solver_cond_N > N)
+        printf("Warning: qp_solver_cond_N = %d > N = %d\n", qp_solver_cond_N, N);
+    ocp_nlp_solver_opts_set(capsule->nlp_config, capsule->nlp_opts, "qp_cond_N", &qp_solver_cond_N);
+
+    // 3) continue with the remaining steps from segway_linear_mpc_acados_create_with_discretization(...):
+    // -> 8) create solver
+    capsule->nlp_solver = ocp_nlp_solver_create(capsule->nlp_config, capsule->nlp_dims, capsule->nlp_opts, capsule->nlp_in);
+
+    // -> 9) do precomputations
+    int status = segway_linear_mpc_acados_create_precompute(capsule);
+    return status;
 }
 
 
@@ -940,6 +943,14 @@ int segway_linear_mpc_acados_reset(segway_linear_mpc_solver_capsule* capsule, in
         {
             ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "pi", buffer);
         }
+    }
+    // get qp_status: if NaN -> reset memory
+    int qp_status;
+    ocp_nlp_get(capsule->nlp_solver, "qp_status", &qp_status);
+    if (reset_qp_solver_mem || (qp_status == 3))
+    {
+        // printf("\nin reset qp_status %d -> resetting QP memory\n", qp_status);
+        ocp_nlp_solver_reset_qp_memory(nlp_solver, nlp_in, nlp_out);
     }
 
     free(buffer);
@@ -1023,17 +1034,17 @@ int segway_linear_mpc_acados_free(segway_linear_mpc_solver_capsule* capsule)
     // dynamics
     for (int i = 0; i < N; i++)
     {
-        external_function_external_param_casadi_free(&capsule->expl_vde_forw[i]);
+        external_function_external_param_casadi_free(&capsule->discr_dyn_phi_fun[i]);
+        external_function_external_param_casadi_free(&capsule->discr_dyn_phi_fun_jac_ut_xt[i]);
         
-        external_function_external_param_casadi_free(&capsule->expl_ode_fun[i]);
-        external_function_external_param_casadi_free(&capsule->expl_vde_adj[i]);
-        external_function_external_param_casadi_free(&capsule->expl_ode_hess[i]);
+        
+        external_function_external_param_casadi_free(&capsule->discr_dyn_phi_fun_jac_ut_xt_hess[i]);
     }
-    free(capsule->expl_vde_adj);
-    free(capsule->expl_vde_forw);
-    
-    free(capsule->expl_ode_fun);
-    free(capsule->expl_ode_hess);
+    free(capsule->discr_dyn_phi_fun);
+    free(capsule->discr_dyn_phi_fun_jac_ut_xt);
+  
+  
+    free(capsule->discr_dyn_phi_fun_jac_ut_xt_hess);
 
     // cost
 

@@ -36,40 +36,33 @@ extern "C" {
 #endif
 
 
-/* explicit ODE */
-
-// explicit ODE
-int segway_linear_mpc_expl_ode_fun(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
-int segway_linear_mpc_expl_ode_fun_work(int *, int *, int *, int *);
-const int *segway_linear_mpc_expl_ode_fun_sparsity_in(int);
-const int *segway_linear_mpc_expl_ode_fun_sparsity_out(int);
-int segway_linear_mpc_expl_ode_fun_n_in(void);
-int segway_linear_mpc_expl_ode_fun_n_out(void);
-
-// explicit forward VDE
-int segway_linear_mpc_expl_vde_forw(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
-int segway_linear_mpc_expl_vde_forw_work(int *, int *, int *, int *);
-const int *segway_linear_mpc_expl_vde_forw_sparsity_in(int);
-const int *segway_linear_mpc_expl_vde_forw_sparsity_out(int);
-int segway_linear_mpc_expl_vde_forw_n_in(void);
-int segway_linear_mpc_expl_vde_forw_n_out(void);
-
-// explicit param-direction forward VDE
 
 
-// explicit adjoint VDE
-int segway_linear_mpc_expl_vde_adj(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
-int segway_linear_mpc_expl_vde_adj_work(int *, int *, int *, int *);
-const int *segway_linear_mpc_expl_vde_adj_sparsity_in(int);
-const int *segway_linear_mpc_expl_vde_adj_sparsity_out(int);
-int segway_linear_mpc_expl_vde_adj_n_in(void);
-int segway_linear_mpc_expl_vde_adj_n_out(void);
-int segway_linear_mpc_expl_ode_hess(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
-int segway_linear_mpc_expl_ode_hess_work(int *, int *, int *, int *);
-const int *segway_linear_mpc_expl_ode_hess_sparsity_in(int);
-const int *segway_linear_mpc_expl_ode_hess_sparsity_out(int);
-int segway_linear_mpc_expl_ode_hess_n_in(void);
-int segway_linear_mpc_expl_ode_hess_n_out(void);
+int segway_linear_mpc_dyn_disc_phi_fun(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
+int segway_linear_mpc_dyn_disc_phi_fun_work(int *, int *, int *, int *);
+const int *segway_linear_mpc_dyn_disc_phi_fun_sparsity_in(int);
+const int *segway_linear_mpc_dyn_disc_phi_fun_sparsity_out(int);
+int segway_linear_mpc_dyn_disc_phi_fun_n_in(void);
+int segway_linear_mpc_dyn_disc_phi_fun_n_out(void);
+
+int segway_linear_mpc_dyn_disc_phi_fun_jac(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
+int segway_linear_mpc_dyn_disc_phi_fun_jac_work(int *, int *, int *, int *);
+const int *segway_linear_mpc_dyn_disc_phi_fun_jac_sparsity_in(int);
+const int *segway_linear_mpc_dyn_disc_phi_fun_jac_sparsity_out(int);
+int segway_linear_mpc_dyn_disc_phi_fun_jac_n_in(void);
+int segway_linear_mpc_dyn_disc_phi_fun_jac_n_out(void);
+
+
+
+
+int segway_linear_mpc_dyn_disc_phi_fun_jac_hess(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
+int segway_linear_mpc_dyn_disc_phi_fun_jac_hess_work(int *, int *, int *, int *);
+const int *segway_linear_mpc_dyn_disc_phi_fun_jac_hess_sparsity_in(int);
+const int *segway_linear_mpc_dyn_disc_phi_fun_jac_hess_sparsity_out(int);
+int segway_linear_mpc_dyn_disc_phi_fun_jac_hess_n_in(void);
+int segway_linear_mpc_dyn_disc_phi_fun_jac_hess_n_out(void);
+
+
 
 
 

@@ -56,6 +56,7 @@ void step_manager_init() {
         uint32_t channel             = motors[i].channel;
         TIM_OC_InitTypeDef sConfigOC = {0};
         htim->Instance->CR1 &= ~TIM_CR1_OPM;
+        htim->Instance->CR1 &= ~TIM_CR1_ARPE;
 
         sConfigOC.OCMode       = TIM_OCMODE_PWM1;
         sConfigOC.Pulse        = STEP_PULSE_WIDTH_US;
@@ -81,56 +82,54 @@ void step_manager_set_speed(step_motor_id_t motor_id, float rad_per_second) {
 
     TIM_HandleTypeDef *htim = motors[motor_id].htim;
     uint32_t channel        = motors[motor_id].channel;
-    uint8_t is_negative     = (rad_per_second < 0.0f) ? 1 : 0;
-    uint8_t pin_state       = is_negative ^ motors[motor_id].dir_inverted;
+
+    // 1. Kierunek
+    uint8_t is_negative = (rad_per_second < 0.0f) ? 1 : 0;
+    uint8_t pin_state   = is_negative ^ motors[motor_id].dir_inverted;
     HAL_GPIO_WritePin(motors[motor_id].dir_port, motors[motor_id].dir_pin, pin_state ? GPIO_PIN_SET : GPIO_PIN_RESET);
 
-    float abs_rad_speed    = fabsf(rad_per_second);
-    float abs_steps_speed  = abs_rad_speed * (MOTOR_STEPS_PER_REV / (2.0f * (float)M_PI));
-    uint8_t microstep_mode = 1;
-    GPIO_PinState ms1 = GPIO_PIN_RESET, ms2 = GPIO_PIN_RESET, ms3 = GPIO_PIN_RESET;
+    float abs_rad_speed   = fabsf(rad_per_second);
+    float abs_steps_speed = abs_rad_speed * (MOTOR_STEPS_PER_REV / (2.0f * (float)M_PI));
 
-    if (abs_rad_speed < 1.0f) {
-        microstep_mode = 16;
-        ms1            = GPIO_PIN_SET;
-        ms2            = GPIO_PIN_SET;
-        ms3            = GPIO_PIN_SET;
-    } else if (abs_rad_speed < 2.0f) {
-        microstep_mode = 8;
-        ms1            = GPIO_PIN_SET;
-        ms2            = GPIO_PIN_SET;
-        ms3            = GPIO_PIN_RESET;
-    } else if (abs_rad_speed < 4.0f) {
-        microstep_mode = 4;
-        ms1            = GPIO_PIN_RESET;
-        ms2            = GPIO_PIN_SET;
-        ms3            = GPIO_PIN_RESET;
-    } else if (abs_rad_speed < 6.0f) {
-        microstep_mode = 2;
-        ms1            = GPIO_PIN_SET;
-        ms2            = GPIO_PIN_RESET;
-        ms3            = GPIO_PIN_RESET;
-    }
-
-    HAL_GPIO_WritePin(motors[motor_id].ms1_port, motors[motor_id].ms1_pin, ms1);
-    HAL_GPIO_WritePin(motors[motor_id].ms2_port, motors[motor_id].ms2_pin, ms2);
-    HAL_GPIO_WritePin(motors[motor_id].ms3_port, motors[motor_id].ms3_pin, ms3);
+    // FIX 1: SZTYWNY MICROSTEPPING.
+    // Brak szarpania fazy sterownika! Ustawiamy np. na 1/16 kroku.
+    uint8_t microstep_mode = 16;
+    HAL_GPIO_WritePin(motors[motor_id].ms1_port, motors[motor_id].ms1_pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(motors[motor_id].ms2_port, motors[motor_id].ms2_pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(motors[motor_id].ms3_port, motors[motor_id].ms3_pin, GPIO_PIN_SET);
 
     float hardware_speed       = abs_steps_speed * (float)microstep_mode;
     uint32_t max_period        = 0xFFFF;
     float min_steps_per_second = (float)(TIMER_CLOCK_FREQ / (TIMER_PRESCALER + 1)) / (float)max_period;
+
     if (hardware_speed <= min_steps_per_second) {
-        HAL_TIM_PWM_Stop(htim, channel);
+        // FIX 2: Zatrzymujemy tylko, jeśli silnik faktycznie się kręcił
+        if (motors[motor_id].current_speed_rad_s != 0.0f) {
+            HAL_TIM_PWM_Stop(htim, channel);
+            motors[motor_id].current_speed_rad_s = 0.0f;
+        }
     } else {
         uint32_t period = (uint32_t)((float)(TIMER_CLOCK_FREQ / (TIMER_PRESCALER + 1)) / hardware_speed);
-        if (period <= STEP_PULSE_WIDTH_US)
+        if (period <= STEP_PULSE_WIDTH_US) {
             period = STEP_PULSE_WIDTH_US + 1;
-
-        __HAL_TIM_SET_AUTORELOAD(htim, period - 1);
-        if (__HAL_TIM_GET_COUNTER(htim) >= period) {
-            __HAL_TIM_SET_COUNTER(htim, 0);
         }
-        HAL_TIM_PWM_Start(htim, channel);
+
+        // Ustawiamy nowy okres
+        __HAL_TIM_SET_AUTORELOAD(htim, period - 1);
+
+        // Agresywny reset licznika, jeśli nowy okres jest krótszy niż obecny stan
+        if (__HAL_TIM_GET_COUNTER(htim) >= period) {
+            htim->Instance->EGR = TIM_EGR_UG;
+            htim->Instance->SR  = ~TIM_SR_UIF;  // Czyścimy flagę, by nie było lewego przerwania
+        }
+
+        // FIX 3: Startujemy timer tylko wtedy, gdy ruszamy z postoju
+        if (motors[motor_id].current_speed_rad_s == 0.0f) {
+            __HAL_TIM_SET_COUNTER(htim, 0);  // Zerujemy licznik na start
+            HAL_TIM_PWM_Start(htim, channel);
+        }
+
+        motors[motor_id].current_speed_rad_s = rad_per_second;
     }
 }
 

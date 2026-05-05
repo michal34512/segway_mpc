@@ -15,7 +15,7 @@ extern "C" {
   #define _CASADI_NAMESPACE_CONCAT(NS, ID) NS ## ID
   #define CASADI_PREFIX(ID) CASADI_NAMESPACE_CONCAT(CODEGEN_PREFIX, ID)
 #else
-  #define CASADI_PREFIX(ID) segway_linear_mpc_expl_ode_fun_ ## ID
+  #define CASADI_PREFIX(ID) segway_linear_mpc_dyn_disc_phi_fun_ ## ID
 #endif
 
 #include <math.h>
@@ -53,73 +53,84 @@ static const casadi_int casadi_s0[3] = {4, 1, 1};
 static const casadi_int casadi_s1[3] = {2, 1, 1};
 static const casadi_int casadi_s2[3] = {0, 1, 1};
 
-/* segway_linear_mpc_expl_ode_fun:(i0[4],i1[2],i2[0])->(o0[4]) */
+/* segway_linear_mpc_dyn_disc_phi_fun:(i0[4],i1[2],i2[0])->(o0[4]) */
 static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
-  casadi_real a0, a1, a2, a3, a4;
-  a0=5.0000000000000000e-01;
-  a1=arg[1]? arg[1][0] : 0;
-  a2=(a0*a1);
-  a3=arg[1]? arg[1][1] : 0;
-  a0=(a0*a3);
-  a2=(a2+a0);
-  if (res[0]!=0) res[0][0]=a2;
-  a0=arg[0]? arg[0][2] : 0;
-  if (res[0]!=0) res[0][1]=a0;
-  a0=3.4953826589712492e+01;
-  a4=arg[0]? arg[0][1] : 0;
+  casadi_real a0, a1, a2, a3, a4, a5, a6;
+  a0=arg[0]? arg[0][0] : 0;
+  a1=2.0000000000000000e-02;
+  a2=5.0000000000000000e-01;
+  a3=arg[1]? arg[1][0] : 0;
+  a4=(a2*a3);
+  a5=arg[1]? arg[1][1] : 0;
+  a2=(a2*a5);
+  a4=(a4+a2);
+  a2=(a1*a4);
+  a0=(a0+a2);
+  if (res[0]!=0) res[0][0]=a0;
+  a0=arg[0]? arg[0][1] : 0;
+  a2=arg[0]? arg[0][2] : 0;
+  a6=(a1*a2);
+  a6=(a0+a6);
+  if (res[0]!=0) res[0][1]=a6;
+  a6=3.4953826589712492e+01;
+  a6=(a6*a0);
+  a0=4.5890264650551762e+00;
   a0=(a0*a4);
-  a4=4.5890264650551762e+00;
-  a4=(a4*a2);
-  a0=(a0-a4);
-  if (res[0]!=0) res[0][2]=a0;
-  a0=-5.;
-  a0=(a0*a1);
-  a1=5.;
-  a1=(a1*a3);
-  a0=(a0+a1);
-  if (res[0]!=0) res[0][3]=a0;
+  a6=(a6-a0);
+  a6=(a1*a6);
+  a2=(a2+a6);
+  if (res[0]!=0) res[0][2]=a2;
+  a2=arg[0]? arg[0][3] : 0;
+  a6=-5.;
+  a6=(a6*a3);
+  a3=5.;
+  a3=(a3*a5);
+  a6=(a6+a3);
+  a1=(a1*a6);
+  a2=(a2+a1);
+  if (res[0]!=0) res[0][3]=a2;
   return 0;
 }
 
-CASADI_SYMBOL_EXPORT int segway_linear_mpc_expl_ode_fun(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
+CASADI_SYMBOL_EXPORT int segway_linear_mpc_dyn_disc_phi_fun(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem){
   return casadi_f0(arg, res, iw, w, mem);
 }
 
-CASADI_SYMBOL_EXPORT int segway_linear_mpc_expl_ode_fun_alloc_mem(void) {
+CASADI_SYMBOL_EXPORT int segway_linear_mpc_dyn_disc_phi_fun_alloc_mem(void) {
   return 0;
 }
 
-CASADI_SYMBOL_EXPORT int segway_linear_mpc_expl_ode_fun_init_mem(int mem) {
+CASADI_SYMBOL_EXPORT int segway_linear_mpc_dyn_disc_phi_fun_init_mem(int mem) {
   return 0;
 }
 
-CASADI_SYMBOL_EXPORT void segway_linear_mpc_expl_ode_fun_free_mem(int mem) {
+CASADI_SYMBOL_EXPORT void segway_linear_mpc_dyn_disc_phi_fun_free_mem(int mem) {
 }
 
-CASADI_SYMBOL_EXPORT int segway_linear_mpc_expl_ode_fun_checkout(void) {
+CASADI_SYMBOL_EXPORT int segway_linear_mpc_dyn_disc_phi_fun_checkout(void) {
   return 0;
 }
 
-CASADI_SYMBOL_EXPORT void segway_linear_mpc_expl_ode_fun_release(int mem) {
+CASADI_SYMBOL_EXPORT void segway_linear_mpc_dyn_disc_phi_fun_release(int mem) {
 }
 
-CASADI_SYMBOL_EXPORT void segway_linear_mpc_expl_ode_fun_incref(void) {
+CASADI_SYMBOL_EXPORT void segway_linear_mpc_dyn_disc_phi_fun_incref(void) {
 }
 
-CASADI_SYMBOL_EXPORT void segway_linear_mpc_expl_ode_fun_decref(void) {
+CASADI_SYMBOL_EXPORT void segway_linear_mpc_dyn_disc_phi_fun_decref(void) {
 }
 
-CASADI_SYMBOL_EXPORT casadi_int segway_linear_mpc_expl_ode_fun_n_in(void) { return 3;}
+CASADI_SYMBOL_EXPORT casadi_int segway_linear_mpc_dyn_disc_phi_fun_n_in(void) { return 3;}
 
-CASADI_SYMBOL_EXPORT casadi_int segway_linear_mpc_expl_ode_fun_n_out(void) { return 1;}
+CASADI_SYMBOL_EXPORT casadi_int segway_linear_mpc_dyn_disc_phi_fun_n_out(void) { return 1;}
 
-CASADI_SYMBOL_EXPORT casadi_real segway_linear_mpc_expl_ode_fun_default_in(casadi_int i) {
+CASADI_SYMBOL_EXPORT casadi_real segway_linear_mpc_dyn_disc_phi_fun_default_in(casadi_int i) {
   switch (i) {
     default: return 0;
   }
 }
 
-CASADI_SYMBOL_EXPORT const char* segway_linear_mpc_expl_ode_fun_name_in(casadi_int i) {
+CASADI_SYMBOL_EXPORT const char* segway_linear_mpc_dyn_disc_phi_fun_name_in(casadi_int i) {
   switch (i) {
     case 0: return "i0";
     case 1: return "i1";
@@ -128,14 +139,14 @@ CASADI_SYMBOL_EXPORT const char* segway_linear_mpc_expl_ode_fun_name_in(casadi_i
   }
 }
 
-CASADI_SYMBOL_EXPORT const char* segway_linear_mpc_expl_ode_fun_name_out(casadi_int i) {
+CASADI_SYMBOL_EXPORT const char* segway_linear_mpc_dyn_disc_phi_fun_name_out(casadi_int i) {
   switch (i) {
     case 0: return "o0";
     default: return 0;
   }
 }
 
-CASADI_SYMBOL_EXPORT const casadi_int* segway_linear_mpc_expl_ode_fun_sparsity_in(casadi_int i) {
+CASADI_SYMBOL_EXPORT const casadi_int* segway_linear_mpc_dyn_disc_phi_fun_sparsity_in(casadi_int i) {
   switch (i) {
     case 0: return casadi_s0;
     case 1: return casadi_s1;
@@ -144,14 +155,14 @@ CASADI_SYMBOL_EXPORT const casadi_int* segway_linear_mpc_expl_ode_fun_sparsity_i
   }
 }
 
-CASADI_SYMBOL_EXPORT const casadi_int* segway_linear_mpc_expl_ode_fun_sparsity_out(casadi_int i) {
+CASADI_SYMBOL_EXPORT const casadi_int* segway_linear_mpc_dyn_disc_phi_fun_sparsity_out(casadi_int i) {
   switch (i) {
     case 0: return casadi_s0;
     default: return 0;
   }
 }
 
-CASADI_SYMBOL_EXPORT int segway_linear_mpc_expl_ode_fun_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *sz_iw, casadi_int *sz_w) {
+CASADI_SYMBOL_EXPORT int segway_linear_mpc_dyn_disc_phi_fun_work(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *sz_iw, casadi_int *sz_w) {
   if (sz_arg) *sz_arg = 3;
   if (sz_res) *sz_res = 1;
   if (sz_iw) *sz_iw = 0;
@@ -159,7 +170,7 @@ CASADI_SYMBOL_EXPORT int segway_linear_mpc_expl_ode_fun_work(casadi_int *sz_arg,
   return 0;
 }
 
-CASADI_SYMBOL_EXPORT int segway_linear_mpc_expl_ode_fun_work_bytes(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *sz_iw, casadi_int *sz_w) {
+CASADI_SYMBOL_EXPORT int segway_linear_mpc_dyn_disc_phi_fun_work_bytes(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *sz_iw, casadi_int *sz_w) {
   if (sz_arg) *sz_arg = 3*sizeof(const casadi_real*);
   if (sz_res) *sz_res = 1*sizeof(casadi_real*);
   if (sz_iw) *sz_iw = 0*sizeof(casadi_int);
