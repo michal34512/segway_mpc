@@ -100,6 +100,38 @@ void mpc_wake_up() {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
+typedef struct {
+    float pos;
+    float vel;
+} trajectory_point_t;
+
+/*
+ * Trajektoria:
+ * 0-2s   : 0 -> 1m
+ * 2-4s   : postój
+ * 4-6s   : 1m -> 0m
+ * >6s    : postój
+ */
+static trajectory_point_t trajectory_generator(float t) {
+    trajectory_point_t ref;
+
+    if (t < 2.0f) {
+        ref.pos = 0.5f * t;
+        ref.vel = 0.5f;
+    } else if (t < 4.0f) {
+        ref.pos = 1.0f;
+        ref.vel = 0.0f;
+    } else if (t < 6.0f) {
+        ref.pos = 1.0f - 0.5f * (t - 4.0f);
+        ref.vel = -0.5f;
+    } else {
+        ref.pos = 0.0f;
+        ref.vel = 0.0f;
+    }
+
+    return ref;
+}
+
 static void mpc_task(void *argument) {
     (void)argument;
     portTASK_USES_FLOATING_POINT();
@@ -122,7 +154,8 @@ static void mpc_task(void *argument) {
     LOG_INFO("MPC: Calibration done. Offset: %.2f deg\r\n", pitch_offset);
 
     // Pozycja docelowa (0.0 = stój tam, gdzie zostałeś włączony)
-    float target_x = 0.0f;
+    float target_x  = 0.0f;
+    float traj_time = 0.0f;
 
     HAL_TIM_Base_Start_IT(&htim3);
 
@@ -130,6 +163,10 @@ static void mpc_task(void *argument) {
         if (xSemaphoreTake(mpc_semaphore_handle, portMAX_DELAY) == pdPASS) {
             // Aktualizacja w timerach (zapisuje aktualną prędkość * dt do pozycji)
             step_manager_update_position(SYM_DT);
+
+            traj_time += SYM_DT;
+
+            trajectory_point_t ref = trajectory_generator(traj_time);
 
             imu_data_t imu_data;
             if (PITCH_QUEUE_PEEK(&imu_data) == 0) {
@@ -158,12 +195,12 @@ static void mpc_task(void *argument) {
 
                 // 4. Budowa Wektora Stanu
                 float x0[MPC_NX];
-                x0[0] = x_wheels;  // Błąd pozycji X
-                x0[1] = xp;        // Prędkość
-                x0[2] = phi;       // Pochylenie
-                x0[3] = phip;      // Prędkość pochylania
-                x0[4] = 0.0f;      // Ignorujemy kąt skrętu (Psi)
-                x0[5] = 0.0f;      // Ignorujemy prędkość skręcania (Psip)
+                x0[0] = x_wheels - ref.pos;  // Błąd pozycji X
+                x0[1] = xp - ref.vel;        // Prędkość
+                x0[2] = phi;                 // Pochylenie
+                x0[3] = phip;                // Prędkość pochylania
+                x0[4] = 0.0f;                // Ignorujemy kąt skrętu (Psi)
+                x0[5] = 0.0f;                // Ignorujemy prędkość skręcania (Psip)
 
                 // 5. Rozwiązanie MPC
                 float u0[MPC_NU];
@@ -190,7 +227,7 @@ static void mpc_task(void *argument) {
                 if (omega_R < -MAX_WHEEL_SPEED_RADS)
                     omega_R = -MAX_WHEEL_SPEED_RADS;
 
-                // LOG_INFO("X: %.3f | X_err: %.3f | Phi: %.2f\n\r", global_pos_x, x0[0], imu_data.pitch);
+                LOG_INFO("ref=%.3f x=%.3f err=%.3f v=%.3f phi=%.2f\r\n", ref.pos, x_wheels, x0[0], xp, imu_data.pitch);
 
                 step_manager_set_speed(STEP_MOTOR_1, -omega_L);
                 step_manager_set_speed(STEP_MOTOR_2, -omega_R);
